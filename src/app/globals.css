@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Brand colours */
+  --color-primary: #3B82F6;
+  --color-primary-hover: #2563EB;
+  --color-accent: #EC4899;
+  --color-accent-hover: #DB2777;
+  --color-warning: #F59E0B;
+  --color-success: #22C55E;
+  --color-destructive: #EF4444;
+
+  /* Surfaces */
+  --color-background: #09090B;
+  --color-surface: #18181B;
+  --color-surface-2: #27272A;
+
+  /* Text */
+  --color-text: #FAFAFA;
+  --color-text-muted: #A1A1AA;
+
+  /* Font */
+  --font-sans: var(--font-inter);
+}
+
+/* ── shadcn/ui CSS variables ─────────────────────────────────── */
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 328 81% 60%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 217.2 91.2% 59.8%;
+  --radius: 0.5rem;
+}
+
+* {
+  box-sizing: border-box;
+  border-color: hsl(var(--border));
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  background-color: #09090B;
+  color: #FAFAFA;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #09090B; }
+::-webkit-scrollbar-thumb { background: #27272A; border-radius: 2px; }
+
+/* ── Macro card accent borders ──────────────────────────────── */
+.macro-carbs   { border-left-color: #3B82F6 !important; }
+.macro-protein { border-left-color: #EC4899 !important; }
+.macro-fat     { border-left-color: #F59E0B !important; }
+.macro-protein_fat   { border-left-color: #F59E0B !important; }
+.macro-protein_carbs { border-left-color: #3B82F6 !important; }

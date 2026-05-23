@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  client
+  admin
+}
+
+enum DominantMacro {
+  protein
+  carbs
+  fat
+  protein_fat
+  protein_carbs
+}
+
+enum FoodSource {
+  openfoodfacts
+  custom
+}
+
+model User {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String       @unique
+  name         String?
+  role         UserRole     @default(client)
+  isActive     Boolean      @default(true) @map("is_active")
+  invitedById  String?      @map("invited_by") @db.Uuid
+  invitedBy    User?        @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedUsers User[]       @relation("InvitedBy")
+  invitations  Invitation[] @relation("InvitedByAdmin")
+  createdFoods Food[]
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Invitation {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token       String    @unique
+  email       String
+  invitedById String    @map("invited_by") @db.Uuid
+  invitedBy   User      @relation("InvitedByAdmin", fields: [invitedById], references: [id])
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("invitations")
+}
+
+model Food {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  brand         String?
+  category      String?
+  calories      Decimal       @db.Decimal(8, 2)
+  protein       Decimal       @db.Decimal(8, 2)
+  carbs         Decimal       @db.Decimal(8, 2)
+  fat           Decimal       @db.Decimal(8, 2)
+  fiber         Decimal?      @db.Decimal(8, 2)
+  dominantMacro DominantMacro @map("dominant_macro")
+  source        FoodSource    @default(openfoodfacts)
+  offId         String?       @unique @map("off_id")
+  isActive      Boolean       @default(true) @map("is_active")
+  createdById   String?       @map("created_by") @db.Uuid
+  createdBy     User?         @relation(fields: [createdById], references: [id])
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([dominantMacro, isActive])
+  @@index([name])
+  @@map("foods")
+}
