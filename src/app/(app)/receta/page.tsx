@@ -8,7 +8,6 @@ import { AlternativasList } from "@/components/receta/AlternativasList";
 import { Button } from "@/components/ui/button";
 import { PageSpinner } from "@/components/shared/LoadingSpinner";
 import type { Food, Macros, RecipeAlternativa } from "@/types";
-import { randomUUID } from "crypto";
 
 const EMPTY_MACROS: Macros = { protein: 0, carbs: 0, fat: 0, calories: 0 };
 
@@ -37,7 +36,7 @@ export default function RecetaPage() {
     setAlternativas(null);
     setItems((prev) => [
       ...prev,
-      { food, quantity: 100, tempId: crypto.randomUUID() },
+      { food, quantity: 100, tempId: `${Date.now()}-${Math.random()}` },
     ]);
   }, []);
 

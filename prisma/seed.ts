@@ -5,7 +5,7 @@
  * ⚠️ Solo para desarrollo. En producción, usar el import de OpenFoodFacts.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, DominantMacro } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
 const connectionString = process.env.DATABASE_URL ?? "";
@@ -127,8 +127,7 @@ async function main() {
     carbs: f.carbs,
     fat: f.fat,
     fiber: f.fiber ?? null,
-    // @ts-expect-error dynamic string matches enum
-    dominantMacro: calcDominantMacro(f.protein, f.carbs, f.fat),
+    dominantMacro: calcDominantMacro(f.protein, f.carbs, f.fat) as DominantMacro,
     source: "custom" as const,
     isActive: true,
   }));
