@@ -8,8 +8,12 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/engines", "prisma", "sharp", "unrs-resolver"]
+  },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "dotenv": "^16",
     "@prisma/adapter-neon": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@react-email/components": "^1.0.12",
