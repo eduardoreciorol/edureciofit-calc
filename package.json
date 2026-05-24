@@ -8,9 +8,6 @@
     "start": "next start",
     "lint": "eslint"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": ["@prisma/engines", "prisma", "sharp", "unrs-resolver"]
-  },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "dotenv": "^16",
