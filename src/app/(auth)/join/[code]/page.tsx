@@ -36,11 +36,19 @@ export default function JoinPage() {
     });
 
     if (!res.ok) {
-      const data = await res.json() as { error: string | { formErrors: string[] } };
-      const msg =
-        typeof data.error === "string"
-          ? data.error
-          : (data.error.formErrors?.[0] ?? "Error al crear cuenta");
+      const data = await res.json() as {
+        error: string | { formErrors: string[]; fieldErrors: Record<string, string[]> };
+      };
+      let msg = "Error al crear cuenta";
+      if (typeof data.error === "string") {
+        msg = data.error;
+      } else {
+        const allErrors = [
+          ...(data.error.formErrors ?? []),
+          ...Object.values(data.error.fieldErrors ?? {}).flat(),
+        ];
+        if (allErrors.length > 0) msg = allErrors[0]!;
+      }
       setError(msg);
       setLoading(false);
       return;
