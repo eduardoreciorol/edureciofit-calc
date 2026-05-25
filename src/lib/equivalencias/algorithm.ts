@@ -267,16 +267,25 @@ export async function getRecipeAlternativas(
     };
   });
 
-  // Get top 3 alternatives for each food item
+  // Get top 10 alternatives for each food item (more candidates to filter from)
   const alternativasPerFood = await Promise.all(
-    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 3))
+    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 10))
   );
 
   // Generate alternatives by substituting one food at a time
   const alternativas: RecipeAlternativa[] = [];
 
   for (let i = 0; i < recipeItems.length; i++) {
-    const alts = alternativasPerFood[i];
+    // Names of ALL OTHER foods in the recipe (to avoid duplicating families)
+    const otherFoodNames = originalItems
+      .filter((_, idx) => idx !== i)
+      .map((item) => item.food.name);
+
+    // Keep only alternatives that don't belong to any other ingredient's family
+    const alts = alternativasPerFood[i]!.filter(
+      (alt) => !otherFoodNames.some((name) => isSameFamily(name, alt.food.name))
+    ).slice(0, 3);
+
     for (const alt of alts) {
       const newItems: RecipeItemWithFood[] = originalItems.map((orig, idx) => {
         if (idx !== i) return orig;
