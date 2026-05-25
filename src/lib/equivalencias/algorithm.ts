@@ -101,6 +101,36 @@ function calcMatchScore(
   return Math.round((1 - avgError) * 100);
 }
 
+// ── Name similarity filter ───────────────────────────────────────
+
+/**
+ * Normalizes a food name to a list of significant words (length > 3,
+ * accents removed, lowercase) to detect same-family foods.
+ * e.g. "Arroz integral" → ["arroz", "integral"]
+ */
+function nameWords(name: string): string[] {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3);
+}
+
+/**
+ * Returns true if the candidate food shares a significant keyword
+ * with the source food — meaning they are the same family and the
+ * candidate should be excluded from results.
+ * e.g. source="Arroz blanco", candidate="Arroz integral" → true
+ */
+function isSameFamily(sourceName: string, candidateName: string): boolean {
+  const sourceWords = nameWords(sourceName);
+  if (sourceWords.length === 0) return false;
+  const candidateWords = new Set(nameWords(candidateName));
+  return sourceWords.some((w) => candidateWords.has(w));
+}
+
 // ── Main equivalence function ────────────────────────────────────
 
 export async function getEquivalencias(
@@ -125,10 +155,14 @@ export async function getEquivalencias(
       isActive: true,
       id: { not: foodId },
     },
-    take: 300,
+    take: 500,
   });
 
-  const results: EquivalenciaResult[] = candidates
+  // Exclude foods from the same family (same keyword in name)
+  // e.g. searching "Arroz blanco" excludes "Arroz integral", "Arroz basmati"…
+  const filtered = candidates.filter((c) => !isSameFamily(food.name, c.name));
+
+  const results: EquivalenciaResult[] = filtered
     .map((candidate) => {
       const primaryPer100 = getPrimaryMacroValue(
         candidate.protein.toNumber(),
