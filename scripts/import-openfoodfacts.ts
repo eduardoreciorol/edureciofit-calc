@@ -92,7 +92,8 @@ const CATEGORIES = [
   "espinacas",
   "tomate",
   "zanahorias",
-  "calabacin",
+  "calabacin",        // término español
+  "zucchinis",        // término OFF (categoría en inglés, acepta igual product_name_es)
   "pimiento",
   "lechuga",
   "pepino",
@@ -106,12 +107,12 @@ const CATEGORIES = [
   "aguacate",
   "pipas-de-girasol",
   "semillas-de-chia",
-  // Suplementos deportivos
-  "proteina-whey",
-  "barritas-proteicas",
+  // Suplementos — OFF no tiene estas etiquetas en español; usar las inglesas
+  "protein-powders",
+  "protein-bars",
   // Extras
   "chocolate-negro",
-  "mantequilla-de-cacahuete",
+  "peanut-butters",   // OFF no tiene "mantequilla-de-cacahuete" como categoría
   "miel",
 ];
 
@@ -255,14 +256,16 @@ async function fetchCategory(
 async function main() {
   console.log("🥦 Importando alimentos desde OpenFoodFacts (solo español)…\n");
 
-  // 1 — Limpiar alimentos OFF anteriores (idiomas mezclados, nombres basura)
-  console.log("🗑️  Eliminando alimentos OFF previos…");
-  const deleted = await prisma.food.deleteMany({
-    where: { source: FoodSource.openfoodfacts },
-  });
-  console.log(`   Eliminados: ${deleted.count}\n`);
-
-  const existingIds = new Set<string>();
+  // Cargar offIds ya en BD para skip rápido (evita upserts innecesarios)
+  const existingIds = new Set(
+    (
+      await prisma.food.findMany({
+        where: { offId: { not: null } },
+        select: { offId: true },
+      })
+    ).map((f) => f.offId!)
+  );
+  console.log(`ℹ️  Alimentos OFF ya en BD: ${existingIds.size}\n`);
   let totalInserted = 0;
   let totalSkipped = 0;
 
