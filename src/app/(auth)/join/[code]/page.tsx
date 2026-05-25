@@ -117,7 +117,7 @@ export default function JoinPage() {
         <Input
           label="Contraseña"
           type="password"
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 6 caracteres"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

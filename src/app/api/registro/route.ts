@@ -7,7 +7,7 @@ const schema = z.object({
   code: z.string().min(1),
   email: z.string().email("Email no válido"),
   name: z.string().min(1, "Nombre requerido").max(80),
-  password: z.string().min(8, "Mínimo 8 caracteres"),
+  password: z.string().min(6, "Mínimo 6 caracteres"),
 });
 
 export async function POST(request: Request) {
