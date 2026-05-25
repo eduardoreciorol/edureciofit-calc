@@ -56,7 +56,12 @@ export default function UsuariosPage() {
 
     setInviting(false);
     if (res.ok) {
-      setInviteSuccess(`Invitación enviada a ${inviteEmail}`);
+      const data = await res.json() as { email?: string; email_error?: string | null };
+      if (data.email_error) {
+        setInviteError(`Invitación creada pero el email falló: ${data.email_error}`);
+      } else {
+        setInviteSuccess(`Invitación enviada a ${inviteEmail}`);
+      }
       setInviteEmail("");
       setInviteName("");
     } else {

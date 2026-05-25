@@ -55,12 +55,13 @@ export async function POST(request: Request) {
     },
   });
 
-  // Send email (don't block on failure)
+  // Send email
+  let emailError: string | null = null;
   try {
     await sendInvitationEmail({ to: email, name, token });
   } catch (err) {
+    emailError = err instanceof Error ? err.message : String(err);
     console.error("Error sending invitation email:", err);
-    // Still return success — invitation is created, can resend manually
   }
 
   return NextResponse.json(
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
       email: invitation.email,
       token: invitation.token,
       expires_at: invitation.expiresAt,
+      email_error: emailError,
     },
     { status: 201 }
   );
