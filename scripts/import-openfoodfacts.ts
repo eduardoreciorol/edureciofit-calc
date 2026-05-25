@@ -2,10 +2,12 @@
  * Importa alimentos desde OpenFoodFacts a la base de datos.
  * Ejecutar: pnpm dlx tsx scripts/import-openfoodfacts.ts
  *
- * - Descarga por categorías (carnes, pescados, lácteos, cereales…)
- * - Filtra solo productos con macros completos y coherentes
- * - Usa el código de barras OFF (offId) como clave única para upsert
- * - Calcula dominant_macro en el servidor
+ * v2 — Solo español:
+ * - Usa es.openfoodfacts.org (endpoint español, devuelve product_name_es más poblado)
+ * - Exige product_name_es: si un producto no tiene nombre en español se descarta
+ * - Decodifica entidades HTML (&quot; &amp; etc.)
+ * - Valida que el nombre no sea basura (códigos, fechas, puros números…)
+ * - Limpia todos los alimentos OFF previos antes de reimportar
  */
 
 import { PrismaClient, DominantMacro, FoodSource } from "@prisma/client";
@@ -32,7 +34,6 @@ interface OFFProduct {
     fiber_100g?: number;
   };
   brands?: string;
-  categories_tags?: string[];
 }
 
 interface OFFResponse {
@@ -41,80 +42,130 @@ interface OFFResponse {
 }
 
 // ─── Categorías a importar ───────────────────────────────────────────────────
+// Usamos términos en español para que el endpoint español devuelva más resultados
+// con product_name_es relleno.
 
 const CATEGORIES = [
   // Proteínas animales
-  "chicken",
-  "beef",
-  "pork",
-  "turkey",
-  "lamb",
-  "fish",
+  "pollo",
+  "ternera",
+  "cerdo",
+  "pavo",
+  "cordero",
+  "pescado",
   "salmon",
-  "tuna",
-  "cod",
-  "shrimp",
-  "eggs",
+  "atun",
+  "bacalao",
+  "gambas",
+  "huevos",
   // Lácteos
-  "yogurts",
-  "cheeses",
-  "milks",
-  "cottage-cheese",
+  "yogur",
+  "queso",
+  "leche",
+  "queso-fresco",
   "quark",
   // Cereales y carbohidratos
-  "rices",
-  "pastas",
-  "breads",
-  "oats",
-  "potatoes",
-  "sweet-potatoes",
+  "arroz",
+  "pasta",
+  "pan",
+  "avena",
+  "patata",
+  "boniato",
   "quinoa",
   // Legumbres
-  "lentils",
-  "chickpeas",
-  "beans",
-  "soybeans",
-  "peas",
+  "lentejas",
+  "garbanzos",
+  "alubias",
+  "soja",
+  "guisantes",
   // Frutas
-  "bananas",
-  "apples",
-  "oranges",
-  "strawberries",
-  "grapes",
-  "mangoes",
-  "blueberries",
-  "pineapples",
+  "platano",
+  "manzana",
+  "naranja",
+  "fresas",
+  "uvas",
+  "mango",
+  "arandanos",
+  "pina",
   // Verduras
-  "broccoli",
-  "spinach",
-  "tomatoes",
-  "carrots",
-  "zucchinis",
-  "peppers",
-  "lettuce",
-  "cucumbers",
-  "onions",
-  "garlic",
+  "brocoli",
+  "espinacas",
+  "tomate",
+  "zanahorias",
+  "calabacin",
+  "pimiento",
+  "lechuga",
+  "pepino",
+  "cebolla",
+  "ajo",
   // Grasas y frutos secos
-  "olive-oils",
-  "almonds",
-  "walnuts",
-  "peanuts",
-  "avocados",
-  "sunflower-seeds",
-  "chia-seeds",
+  "aceite-de-oliva",
+  "almendras",
+  "nueces",
+  "cacahuetes",
+  "aguacate",
+  "pipas-de-girasol",
+  "semillas-de-chia",
   // Suplementos deportivos
-  "protein-powders",
-  "protein-bars",
+  "proteina-whey",
+  "barritas-proteicas",
   // Extras
-  "dark-chocolates",
-  "peanut-butters",
-  "honey",
+  "chocolate-negro",
+  "mantequilla-de-cacahuete",
+  "miel",
 ];
 
-const PAGES_PER_CATEGORY = 3; // 3 × 100 = hasta 300 por categoría
+const PAGES_PER_CATEGORY = 5; // 5 × 100 = hasta 500 por categoría
 const PAGE_SIZE = 100;
-const DELAY_MS = 350; // respetar rate limit de OFF
+const DELAY_MS = 400; // respetar rate limit de OFF
+
+// ─── Utilidades ──────────────────────────────────────────────────────────────
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function round1(n: number) {
+  return Math.round(n * 10) / 10;
+}
+
+/** Decodifica entidades HTML básicas presentes en nombres de OFF */
+function decodeHtml(str: string): string {
+  return str
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h: string) =>
+      String.fromCharCode(parseInt(h, 16))
+    )
+    .trim();
+}
+
+/**
+ * Valida que el nombre sea un nombre de alimento real en español.
+ * Descarta: códigos de barras, fechas, nombres sin letras, demasiado cortos.
+ */
+function isValidSpanishName(name: string): boolean {
+  if (!name || name.trim().length < 3) return false;
+
+  // Debe contener al menos una letra
+  if (!/[a-zA-ZáéíóúüñÁÉÍÓÚÜÑàèìòùâêîôûçÇ]/.test(name)) return false;
+
+  // No puede ser mayoritariamente dígitos (barcode, fecha…)
+  const digits = (name.match(/\d/g) ?? []).length;
+  if (digits > name.length * 0.4) return false;
+
+  // No puede empezar por punto o número
+  if (/^[.\d]/.test(name.trim())) return false;
+
+  // Longitud máxima razonable
+  if (name.length > 150) return false;
+
+  return true;
+}
 
 // ─── Algoritmo macro dominante ───────────────────────────────────────────────
 
@@ -138,16 +189,18 @@ function calcDominantMacro(
   return DominantMacro.carbs;
 }
 
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+// ─── Validación de producto ──────────────────────────────────────────────────
 
-function round1(n: number) {
-  return Math.round(n * 10) / 10;
-}
-
-function isValid(p: OFFProduct): boolean {
+function isValidProduct(p: OFFProduct): boolean {
   if (!p.code) return false;
+
+  // ── Debe tener nombre en español ─────────────────────────────────────────
+  const rawName = p.product_name_es;
+  if (!rawName) return false;
+  const name = decodeHtml(rawName);
+  if (!isValidSpanishName(name)) return false;
+
+  // ── Macros completos y coherentes ────────────────────────────────────────
   const n = p.nutriments;
   if (!n) return false;
 
@@ -160,8 +213,7 @@ function isValid(p: OFFProduct): boolean {
   if (kcal > 950 || prot > 100 || carb > 100 || fat > 100) return false;
   if (prot + carb + fat > 105) return false;
 
-  const name = p.product_name_es || p.product_name || p.product_name_en;
-  return !!name && name.trim().length >= 2;
+  return true;
 }
 
 // ─── Fetch con reintentos ────────────────────────────────────────────────────
@@ -170,11 +222,12 @@ async function fetchCategory(
   category: string,
   page: number
 ): Promise<OFFProduct[]> {
+  // Usamos el endpoint español de OFF para obtener más product_name_es
   const url =
-    `https://world.openfoodfacts.org/cgi/search.pl` +
+    `https://es.openfoodfacts.org/cgi/search.pl` +
     `?action=process&json=1` +
     `&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(category)}` +
-    `&fields=code,product_name,product_name_es,product_name_en,brands,nutriments` +
+    `&fields=code,product_name_es,product_name,product_name_en,brands,nutriments` +
     `&page_size=${PAGE_SIZE}&page=${page}` +
     `&sort_by=unique_scans_n`;
 
@@ -200,20 +253,17 @@ async function fetchCategory(
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("🥦 Iniciando importación desde OpenFoodFacts…\n");
+  console.log("🥦 Importando alimentos desde OpenFoodFacts (solo español)…\n");
 
-  // Cargar offIds ya en BD para skip rápido
-  const existingIds = new Set(
-    (
-      await prisma.food.findMany({
-        where: { offId: { not: null } },
-        select: { offId: true },
-      })
-    ).map((f) => f.offId!)
-  );
-  console.log(`ℹ️  Alimentos OFF ya en BD: ${existingIds.size}`);
+  // 1 — Limpiar alimentos OFF anteriores (idiomas mezclados, nombres basura)
+  console.log("🗑️  Eliminando alimentos OFF previos…");
+  const deleted = await prisma.food.deleteMany({
+    where: { source: FoodSource.openfoodfacts },
+  });
+  console.log(`   Eliminados: ${deleted.count}\n`);
 
-  let totalUpserted = 0;
+  const existingIds = new Set<string>();
+  let totalInserted = 0;
   let totalSkipped = 0;
 
   for (const category of CATEGORIES) {
@@ -228,30 +278,31 @@ async function main() {
       const batch: Array<Parameters<typeof prisma.food.upsert>[0]> = [];
 
       for (const p of products) {
-        if (!isValid(p)) { totalSkipped++; continue; }
+        if (!isValidProduct(p)) { totalSkipped++; continue; }
 
         const offId = p.code!;
         if (existingIds.has(offId)) { totalSkipped++; continue; }
         existingIds.add(offId);
 
-        const rawName =
-          p.product_name_es || p.product_name || p.product_name_en || "";
-        const name =
-          (rawName.charAt(0).toUpperCase() + rawName.slice(1)).substring(0, 120);
+        // Nombre siempre en español, decodificado y capitalizado
+        const rawName = decodeHtml(p.product_name_es!);
+        const name = (rawName.charAt(0).toUpperCase() + rawName.slice(1))
+          .substring(0, 120);
 
         const n = p.nutriments!;
-        const protein = round1(n["proteins_100g"] ?? 0);
-        const carbs = round1(n["carbohydrates_100g"] ?? 0);
-        const fat = round1(n["fat_100g"] ?? 0);
+        const protein  = round1(n["proteins_100g"] ?? 0);
+        const carbs    = round1(n["carbohydrates_100g"] ?? 0);
+        const fat      = round1(n["fat_100g"] ?? 0);
         const calories = round1(n["energy-kcal_100g"] ?? 0);
-        const fiber =
-          n["fiber_100g"] != null ? round1(n["fiber_100g"]) : null;
-        const brand = p.brands ? p.brands.split(",")[0]!.trim().substring(0, 80) : null;
+        const fiber    = n["fiber_100g"] != null ? round1(n["fiber_100g"]) : null;
+        const brand    = p.brands
+          ? p.brands.split(",")[0]!.trim().substring(0, 80)
+          : null;
         const dominantMacro = calcDominantMacro(protein, carbs, fat);
 
         batch.push({
           where: { offId },
-          update: { calories, protein, carbs, fat, fiber, dominantMacro, isActive: true },
+          update: { name, calories, protein, carbs, fat, fiber, dominantMacro, isActive: true },
           create: {
             name,
             brand,
@@ -270,15 +321,14 @@ async function main() {
 
       if (batch.length === 0) continue;
 
-      // Upsert individual (sin transaction para evitar timeout en Neon pooler)
-      // Concurrencia de 10 para no saturar la conexión
+      // Upserts en chunks de 10 (sin $transaction por timeout Neon)
       for (let i = 0; i < batch.length; i += 10) {
         const chunk = batch.slice(i, i + 10);
         await Promise.all(chunk.map((args) => prisma.food.upsert(args)));
       }
 
       catNew += batch.length;
-      totalUpserted += batch.length;
+      totalInserted += batch.length;
       process.stdout.write(`  p${page}:+${batch.length} `);
     }
 
@@ -287,8 +337,8 @@ async function main() {
 
   const total = await prisma.food.count({ where: { isActive: true } });
   console.log(`\n✅ Importación completa`);
-  console.log(`   Insertados/actualizados : ${totalUpserted}`);
-  console.log(`   Omitidos                : ${totalSkipped}`);
+  console.log(`   Insertados (español)    : ${totalInserted}`);
+  console.log(`   Omitidos (sin nombre es): ${totalSkipped}`);
   console.log(`   Total alimentos activos : ${total}`);
 
   await prisma.$disconnect();
