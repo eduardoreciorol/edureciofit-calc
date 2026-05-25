@@ -56,9 +56,8 @@ export default function JoinPage() {
       return;
     }
 
-    setDone(true);
-    router.push("/swap");
-    router.refresh();
+    // Hard redirect so the browser sends the new session cookie to the server
+    window.location.href = "/swap";
   }
 
   if (done) {
@@ -66,7 +65,16 @@ export default function JoinPage() {
       <div className="bg-[#18181B] border border-[#27272A] rounded-[16px] p-6 text-center">
         <p className="text-3xl mb-3">💪</p>
         <p className="font-semibold text-[#FAFAFA] mb-1">¡Cuenta creada!</p>
-        <p className="text-sm text-[#A1A1AA]">Entrando a la app…</p>
+        <p className="text-sm text-[#A1A1AA]">Ve al login para entrar.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-[#18181B] border border-[#27272A] rounded-[16px] p-6 text-center">
+        <p className="text-3xl mb-3">⏳</p>
+        <p className="text-sm text-[#A1A1AA]">Creando tu cuenta…</p>
       </div>
     );
   }
