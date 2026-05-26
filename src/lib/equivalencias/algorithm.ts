@@ -114,107 +114,159 @@ const FOOD_TYPES: Array<{ type: string; keywords: string[] }> = [
   {
     type: "lacteo",
     keywords: [
+      // ES
       "leche", "yogur", "queso", "nata", "mantequill", "kefir", "cuajada",
       "ricotta", "cottage", "mozzarell", "cheddar", "parmesano", "mascarpone",
       "requesón", "skyr", "buttermilk", "ghee",
+      // EN
+      "milk", "yogurt", "cheese", "cream", "butter", "dairy",
     ],
   },
   {
     type: "carne",
     keywords: [
+      // ES
       "pollo", "pechuga", "muslo", "ternera", "buey", "cerdo", "lomo",
       "solomillo", "costilla", "pavo", "conejo", "cordero", "pato", "avestruz",
       "hamburguesa", "carne picada", "filete",
+      // EN
+      "chicken", "beef", "pork", "turkey", "lamb", "veal", "duck", "rabbit",
+      "steak", "ground meat", "minced", "breast", "thigh",
     ],
   },
   {
     type: "pescado_marisco",
     keywords: [
+      // ES
       "salmon", "atun", "merluza", "bacalao", "dorada", "lubina", "sardina",
       "caballa", "trucha", "gamba", "langostino", "sepia", "calamar",
       "mejillon", "pulpo", "clupeido", "rape", "panga", "tilapia",
+      // EN
+      "tuna", "cod", "hake", "shrimp", "prawn", "squid", "mussel",
+      "octopus", "trout", "herring", "mackerel", "anchovy", "sea bass",
+      "sea bream", "fish",
     ],
   },
   {
     type: "huevo",
-    keywords: ["huevo", "clara", "yema"],
+    keywords: [
+      "huevo", "clara", "yema",
+      "egg", "eggs", "egg white", "egg yolk",
+    ],
   },
   {
     type: "embutido",
     keywords: [
+      // ES
       "jamon", "chorizo", "salchicha", "mortadela", "fiambre", "bacon",
       "panceta", "fuet", "salami", "longaniza", "morcilla",
+      // EN
+      "ham", "sausage", "pepperoni", "prosciutto",
     ],
   },
   {
     type: "legumbre",
     keywords: [
+      // ES
       "lenteja", "garbanzo", "alubia", "judía", "frijol", "hummus",
       "edamame", "guisante", "haba", "soja texturiz",
+      // EN
+      "lentil", "chickpea", "bean", "legume",
     ],
   },
   {
     type: "proteina_vegetal",
-    keywords: ["tofu", "tempeh", "seitan"],
+    keywords: [
+      "tofu", "tempeh", "seitan",
+    ],
   },
   {
     type: "cereal_desayuno",
     keywords: [
+      // ES
       "cereal", "copos", "granola", "muesli", "salvado",
       "corn flakes", "special k", "choco", "frosties",
+      // EN
+      "oat flakes", "breakfast cereal",
     ],
   },
   {
     type: "avena",
-    keywords: ["avena", "porridge", "overnight oat"],
+    keywords: [
+      "avena", "porridge", "overnight oat", "oatmeal",
+    ],
   },
   {
     type: "pan_pasta_arroz",
     keywords: [
+      // ES
       "arroz", "pasta", "macarron", "espagueti", "fideo", "quinoa",
       "bulgur", "cuscus", "cous cous", "tostada", " pan ", "baguette",
       "tortilla de trigo", "wrap",
+      // EN
+      "rice", "noodle", "spaghetti", "penne", "fusilli", "bread",
+      "couscous", "tortilla", "pita",
     ],
   },
   {
     type: "patata",
-    keywords: ["patata", "boniato", "yuca", "ñame", "mandioca"],
+    keywords: [
+      "patata", "boniato", "yuca", "ñame", "mandioca",
+      "potato", "sweet potato",
+    ],
   },
   {
     type: "fruta",
     keywords: [
+      // ES
       "manzana", "platano", "naranja", "fresa", "kiwi", "mango", "melon",
       "sandia", " uva", "pera", "piña", "arandano", "frambuesa", "ciruela",
       "albaricoque", "cereza", "higo", "datil", "papaya", "maracuya",
       "lichis", "caqui", "granada", "nectarina", "mandarina", "pomelo",
+      // EN
+      "apple", "banana", "orange", "strawberr", "grape", "peach",
+      "watermelon", "blueberr", "raspberr", "cherry", "fig", "date",
+      "pineapple", "lemon", "lime",
     ],
   },
   {
     type: "verdura",
     keywords: [
+      // ES
       "espinaca", "brocoli", "zanahoria", "tomate", "pepino", "lechuga",
       "acelga", "coliflor", "pimiento", "calabacin", "berenjena", "apio",
       "puerro", "cebolla", "alcachofa", "esparragos", "rabano", "nabo",
       "remolacha", "champiñon", "seta", "endivia", "canonigos",
+      // EN
+      "spinach", "broccoli", "carrot", "tomato", "cucumber", "lettuce",
+      "cauliflower", "pepper", "zucchini", "eggplant", "celery", "onion",
+      "mushroom", "asparagus", "beetroot", "cabbage", "kale",
     ],
   },
   {
     type: "frutos_secos_semillas",
     keywords: [
+      // ES
       "almendra", " nuez", "anacardo", "pistach", "avellana", "cacahuete",
       "macadamia", "pipa", "tahini", "mantequilla de", "chia", "lino",
       "sesamo", "girasol", "calabaza",
+      // EN
+      "almond", "walnut", "cashew", "hazelnut", "peanut", "sunflower seed",
+      "pumpkin seed", "sesame", "flaxseed",
     ],
   },
   {
     type: "aceite",
-    keywords: ["aceite de"],
+    keywords: [
+      "aceite de",
+      "olive oil", "sunflower oil", "coconut oil",
+    ],
   },
   {
     type: "bebida_proteica",
     keywords: [
       "proteina en polvo", "whey", "caseina", "batido proteico",
-      "protein powder", "suero de leche en polvo",
+      "protein powder", "suero de leche en polvo", "protein shake",
     ],
   },
 ];
@@ -405,19 +457,34 @@ export async function getRecipeAlternativas(
 
   // ── Culinary-type pre-filter ──────────────────────────────────
   // For each slot, keep only alternatives whose food type matches the
-  // original food's type (e.g. "leche" → only other dairy, not chicken).
-  // If we can't classify the original food, or if filtering leaves fewer
-  // than 2 candidates, fall back to the full macro-equivalent pool.
+  // original food's type (e.g. "bacalao" → only other fish, not chicken).
+  //
+  // Rules:
+  //  · original has known type → replacement must ALSO have known type AND match
+  //    (unknown-type replacements are rejected to block unclassified meats in English)
+  //  · original has unknown type → no restriction (any macro-equivalent allowed)
+  //  · fallback: if strict filtering leaves < 2 candidates, relax to allow
+  //    unknown-type replacements; if still < 2, use the raw macro pool
   const alternativasPerFood = rawAlternativasPerFood.map((alts, i) => {
     const origType = detectFoodType(originalItems[i]!.food.name);
-    if (!origType) return alts; // unclassifiable → no restriction
+    if (!origType) return alts; // original unclassifiable → no restriction
 
-    const typed = alts.filter((alt) => {
+    // Strict: same type AND replacement must be classifiable
+    const strict = alts.filter((alt) => {
       const altType = detectFoodType(alt.food.name);
-      return !altType || altType === origType; // same type, or alt is unclassifiable
+      return altType === origType;
     });
+    if (strict.length >= 2) return strict;
 
-    return typed.length >= 2 ? typed : alts; // fallback if too few same-type candidates
+    // Relax: allow unknown-type replacements (might still be correct food)
+    const relaxed = alts.filter((alt) => {
+      const altType = detectFoodType(alt.food.name);
+      return !altType || altType === origType;
+    });
+    if (relaxed.length >= 2) return relaxed;
+
+    // Last resort: full macro pool (no type restriction)
+    return alts;
   });
 
   // ── Helper: words used by a set of food names ──────────────────
@@ -495,30 +562,26 @@ export async function getRecipeAlternativas(
   //    For extra variety, try top-3 alternatives for the first non-anchor slot
   //    and pick the best result. ────────────────────────────────────────────
 
+  // alternativasByAnchor[anchorIdx] = alternatives that keep food[anchorIdx]
+  const alternativasByAnchor: RecipeAlternativa[][] = Array.from({ length: N }, () => []);
+
   for (let anchorIdx = 0; anchorIdx < N; anchorIdx++) {
     const anchorItem = originalItems[anchorIdx]!;
-    // Words already "taken" by the anchor food — replacements must not share these
     const takenWords = familyWordsOf([anchorItem.food.name]);
-
-    // Also block replacements that belong to ANY original ingredient's family
-    // (they may not be in the same family as the food they replace, but could
-    //  still be a different original ingredient, violating the ≤1 shared rule)
     const forbiddenWords = new Set([...allOriginalWords]);
 
-    // Try a few top-picks for each non-anchor slot and collect valid combos
     function buildCombo(
-      slotOrder: number[],    // positions to fill (all except anchorIdx)
-      slotIdx: number,        // current slot in slotOrder
-      usedWords: Set<string>, // family words already committed to
-      chosen: Map<number, RecipeItemWithFood> // pos → chosen item
+      slotOrder: number[],
+      slotIdx: number,
+      usedWords: Set<string>,
+      chosen: Map<number, RecipeItemWithFood>
     ): void {
       if (slotIdx === slotOrder.length) {
-        // All slots filled — build the alternative
         const items: RecipeItemWithFood[] = originalItems.map((orig, pos) => {
           if (pos === anchorIdx) return orig;
           return chosen.get(pos)!;
         });
-        alternativas.push(buildAlternativa(items));
+        alternativasByAnchor[anchorIdx]!.push(buildAlternativa(items));
         return;
       }
 
@@ -527,10 +590,8 @@ export async function getRecipeAlternativas(
 
       let picked = 0;
       for (const alt of candidates) {
-        if (picked >= 3) break; // try up to 3 options per slot for variety
+        if (picked >= 3) break;
         const words = nameWords(alt.food.name);
-        // Reject if shares a family word with anchor, with already-chosen replacements,
-        // or with ANY original ingredient (the ≤1 rule)
         const conflicts =
           words.some((w) => usedWords.has(w)) ||
           words.some((w) => forbiddenWords.has(w));
@@ -547,21 +608,32 @@ export async function getRecipeAlternativas(
     const nonAnchorSlots = Array.from({ length: N }, (_, i) => i).filter(
       (i) => i !== anchorIdx
     );
-
     buildCombo(nonAnchorSlots, 0, takenWords, new Map());
+
+    // Sort each anchor's alternatives by diffScore
+    alternativasByAnchor[anchorIdx]!.sort((a, b) => a.diffScore - b.diffScore);
   }
 
-  // Deduplicate by food-id set (same combo in different order is the same alternative)
+  // ── Balanced interleaving ────────────────────────────────────────
+  // Pick alternatives round-robin across anchors so no single anchor
+  // dominates the final list (prevents arroz basmati in 8/10 results).
   const seen = new Set<string>();
-  const unique = alternativas.filter((alt) => {
-    const key = alt.foods
-      .map((f) => f.food.id)
-      .sort()
-      .join("|");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  const result: RecipeAlternativa[] = [];
+  const TARGET = 10;
+  const perAnchorMax = Math.ceil(TARGET / N); // fair quota per anchor
 
-  return unique.sort((a, b) => a.diffScore - b.diffScore).slice(0, 10);
+  // Round-robin: take the best from each anchor in turn
+  for (let round = 0; round < perAnchorMax && result.length < TARGET; round++) {
+    for (let anchorIdx = 0; anchorIdx < N && result.length < TARGET; anchorIdx++) {
+      const alt = alternativasByAnchor[anchorIdx]![round];
+      if (!alt) continue;
+
+      const key = alt.foods.map((f) => f.food.id).sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(alt);
+    }
+  }
+
+  return result;
 }
