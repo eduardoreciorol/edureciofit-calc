@@ -7,7 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageSpinner } from "@/components/shared/LoadingSpinner";
 import { MacroBadge } from "@/components/swap/MacroBadge";
-import type { Food } from "@/types";
+import type { Food, FoodSource } from "@/types";
+
+const SOURCE_LABEL: Record<FoodSource, string> = {
+  openfoodfacts: "OFF",
+  custom: "Custom",
+  harbiz: "Harbiz",
+};
+
+const SOURCE_VARIANT: Record<FoodSource, "muted" | "accent" | "warning"> = {
+  openfoodfacts: "muted",
+  custom: "accent",
+  harbiz: "warning",
+};
 
 export default function AlimentosPage() {
   const [foods, setFoods] = useState<Food[]>([]);
@@ -16,6 +28,7 @@ export default function AlimentosPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [activeOnly, setActiveOnly] = useState(true);
+  const [source, setSource] = useState<FoodSource | "">("");
 
   const fetchFoods = useCallback(async () => {
     setLoading(true);
@@ -23,6 +36,7 @@ export default function AlimentosPage() {
       page: String(page),
       active: String(activeOnly),
       ...(query.length >= 2 ? { q: query } : {}),
+      ...(source ? { source } : {}),
     });
     const res = await fetch(`/api/admin/alimentos?${params}`);
     if (res.ok) {
@@ -31,7 +45,7 @@ export default function AlimentosPage() {
       setTotal(data.total);
     }
     setLoading(false);
-  }, [page, query, activeOnly]);
+  }, [page, query, activeOnly, source]);
 
   useEffect(() => { void fetchFoods(); }, [fetchFoods]);
 
@@ -74,6 +88,16 @@ export default function AlimentosPage() {
         >
           {activeOnly ? "Solo activos" : "Todos"}
         </button>
+        <select
+          value={source}
+          onChange={(e) => { setSource(e.target.value as FoodSource | ""); setPage(1); }}
+          className="text-sm px-3 py-2 rounded-[8px] border border-[#27272A] bg-[#18181B] text-[#A1A1AA] hover:border-[#3F3F46] transition-colors"
+        >
+          <option value="">Todas las fuentes</option>
+          <option value="openfoodfacts">OpenFoodFacts</option>
+          <option value="harbiz">Harbiz</option>
+          <option value="custom">Custom</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -115,8 +139,8 @@ export default function AlimentosPage() {
                       {food.calories.toFixed(0)} kcal
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={food.source === "custom" ? "accent" : "muted"}>
-                        {food.source === "custom" ? "custom" : "OFF"}
+                      <Badge variant={SOURCE_VARIANT[food.source]}>
+                        {SOURCE_LABEL[food.source]}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right flex items-center gap-2 justify-end">

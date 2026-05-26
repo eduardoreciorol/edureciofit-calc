@@ -35,13 +35,21 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") ?? "";
   const category = searchParams.get("category");
+  const sourceFilter = searchParams.get("source");
   const activeOnly = searchParams.get("active") !== "false";
   const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
   const limit = 20;
 
+  const validSources = ["openfoodfacts", "custom", "harbiz"] as const;
+  type ValidSource = (typeof validSources)[number];
+  const source: ValidSource | undefined = validSources.includes(sourceFilter as ValidSource)
+    ? (sourceFilter as ValidSource)
+    : undefined;
+
   const where = {
     ...(activeOnly ? { isActive: true } : {}),
     ...(category ? { category } : {}),
+    ...(source ? { source } : {}),
     ...(q.length >= 2
       ? {
           OR: [

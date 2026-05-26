@@ -9,7 +9,7 @@ export type DominantMacro =
   | "protein_fat"
   | "protein_carbs";
 
-export type FoodSource = "openfoodfacts" | "custom";
+export type FoodSource = "openfoodfacts" | "custom" | "harbiz";
 
 export interface User {
   id: string;
