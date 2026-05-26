@@ -11,13 +11,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Vertical logo — grande y centrado */}
         <div className="mb-10 flex justify-center">
           <img
-            src="/logo-vertical.png"
+            src="/logo-horizontal.png"
             alt="Creando Gigantes"
             style={{
-              width: "260px",
+              width: "220px",
               height: "auto",
               objectFit: "contain",
-              filter: "drop-shadow(0 4px 32px rgba(212,23,90,0.5))",
             }}
           />
         </div>
