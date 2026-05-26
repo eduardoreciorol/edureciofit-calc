@@ -11,7 +11,7 @@ const tabs = [
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className={cn("h-5 w-5", active ? "text-[#3B82F6]" : "text-[#A1A1AA]")}
+        className={cn("h-5 w-5", active ? "text-[#3DD6E0]" : "text-[#A1A1AA]")}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -31,7 +31,7 @@ const tabs = [
     icon: (active: boolean) => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        className={cn("h-5 w-5", active ? "text-[#3B82F6]" : "text-[#A1A1AA]")}
+        className={cn("h-5 w-5", active ? "text-[#3DD6E0]" : "text-[#A1A1AA]")}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -61,7 +61,7 @@ export function BottomNav() {
               href={tab.href}
               className={cn(
                 "flex-1 flex flex-col items-center justify-center gap-1 text-[10px] font-medium transition-colors",
-                active ? "text-[#3B82F6]" : "text-[#A1A1AA] hover:text-[#FAFAFA]"
+                active ? "text-[#3DD6E0]" : "text-[#A1A1AA] hover:text-[#FAFAFA]"
               )}
             >
               {tab.icon(active)}

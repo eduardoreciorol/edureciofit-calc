@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Brand colours */
-  --color-primary: #3B82F6;
-  --color-primary-hover: #2563EB;
-  --color-accent: #EC4899;
-  --color-accent-hover: #DB2777;
+  /* Brand colours — Creando Gigantes palette */
+  --color-primary: #3DD6E0;        /* CG cyan */
+  --color-primary-hover: #2BC4CF;
+  --color-accent: #D4175A;         /* CG magenta/pink */
+  --color-accent-hover: #B8134E;
   --color-warning: #F59E0B;
   --color-success: #22C55E;
   --color-destructive: #EF4444;
@@ -31,19 +31,19 @@
   --card-foreground: 0 0% 98%;
   --popover: 240 10% 3.9%;
   --popover-foreground: 0 0% 98%;
-  --primary: 217.2 91.2% 59.8%;
+  --primary: 184 72% 56%;          /* CG cyan #3DD6E0 */
   --primary-foreground: 0 0% 98%;
   --secondary: 240 3.7% 15.9%;
   --secondary-foreground: 0 0% 98%;
   --muted: 240 3.7% 15.9%;
   --muted-foreground: 240 5% 64.9%;
-  --accent: 328 81% 60%;
+  --accent: 339 81% 46%;           /* CG magenta #D4175A */
   --accent-foreground: 0 0% 98%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
-  --ring: 217.2 91.2% 59.8%;
+  --ring: 184 72% 56%;             /* CG cyan */
   --radius: 0.5rem;
 }
 
@@ -71,8 +71,8 @@ body {
 ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 2px; }
 
 /* ── Macro card accent borders ──────────────────────────────── */
-.macro-carbs   { border-left-color: #3B82F6 !important; }
-.macro-protein { border-left-color: #EC4899 !important; }
+.macro-carbs   { border-left-color: #3DD6E0 !important; }   /* CG cyan */
+.macro-protein { border-left-color: #D4175A !important; }   /* CG magenta */
 .macro-fat     { border-left-color: #F59E0B !important; }
 .macro-protein_fat   { border-left-color: #F59E0B !important; }
 .macro-protein_carbs { border-left-color: #3B82F6 !important; }

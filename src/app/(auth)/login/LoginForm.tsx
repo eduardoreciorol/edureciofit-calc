@@ -39,7 +39,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="bg-[#18181B] border border-[#27272A] rounded-[16px] p-6">
+    <div className="bg-[#18181B]/90 backdrop-blur-sm border border-[#27272A] rounded-[16px] p-6">
       {errorParam === "cuenta_desactivada" && (
         <div className="mb-4 p-3 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-[8px]">
           <p className="text-sm text-[#EF4444]">
@@ -81,7 +81,7 @@ export function LoginForm() {
           href="https://instagram.com/edureciofit"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[#3B82F6] hover:underline"
+          className="text-[#3DD6E0] hover:underline"
         >
           Contacta con Eduardo
         </a>

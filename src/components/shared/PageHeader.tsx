@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -35,7 +36,14 @@ export function PageHeader({ title, backHref, right, className }: PageHeaderProp
           </svg>
         </Link>
       ) : (
-        <span className="text-[#3B82F6] font-bold text-sm mr-3">edu</span>
+        <Image
+          src="/logo-horizontal.png"
+          alt="Creando Gigantes"
+          width={110}
+          height={28}
+          className="object-contain mr-3 flex-shrink-0"
+          priority
+        />
       )}
 
       <h1 className="flex-1 text-[15px] font-semibold text-[#FAFAFA] truncate">
