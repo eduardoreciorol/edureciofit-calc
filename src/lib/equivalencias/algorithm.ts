@@ -267,9 +267,9 @@ export async function getRecipeAlternativas(
     };
   });
 
-  // Get top 15 alternatives for each food (more pool = better combinations)
+  // Get top 20 alternatives for each food (larger pool = more combinations)
   const alternativasPerFood = await Promise.all(
-    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 15))
+    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 20))
   );
 
   // ── Helper: words used by a set of food names ──────────────────
@@ -328,7 +328,7 @@ export async function getRecipeAlternativas(
 
   if (N === 1) {
     // Single food: return top alternatives directly
-    const alts = alternativasPerFood[0]!.slice(0, 5);
+    const alts = alternativasPerFood[0]!.slice(0, 10);
     for (const alt of alts) {
       alternativas.push(
         buildAlternativa([{ food: alt.food, quantity: alt.quantity, macros: alt.macros }])
@@ -379,7 +379,7 @@ export async function getRecipeAlternativas(
 
       let picked = 0;
       for (const alt of candidates) {
-        if (picked >= 2) break; // try up to 2 options per slot for variety
+        if (picked >= 3) break; // try up to 3 options per slot for variety
         const words = nameWords(alt.food.name);
         // Reject if shares a family word with anchor, with already-chosen replacements,
         // or with ANY original ingredient (the ≤1 rule)
@@ -415,5 +415,5 @@ export async function getRecipeAlternativas(
     return true;
   });
 
-  return unique.sort((a, b) => a.diffScore - b.diffScore).slice(0, 5);
+  return unique.sort((a, b) => a.diffScore - b.diffScore).slice(0, 10);
 }
