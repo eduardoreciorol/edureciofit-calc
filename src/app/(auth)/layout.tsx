@@ -8,17 +8,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <div className="w-full max-w-sm">
-        {/* Vertical logo — grande y centrado */}
-        <div className="mb-10 flex justify-center">
+        <div className="mb-10 flex flex-col items-center gap-4">
           <img
             src="/logo-horizontal.png"
             alt="Creando Gigantes"
-            style={{
-              width: "220px",
-              height: "auto",
-              objectFit: "contain",
-            }}
+            style={{ width: "220px", height: "auto", objectFit: "contain" }}
           />
+          <h1 className="text-white text-xl font-bold tracking-widest uppercase text-center">
+            Intercambiador de Alimentos
+          </h1>
         </div>
         {children}
       </div>
