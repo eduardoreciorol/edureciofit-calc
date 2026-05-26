@@ -36,14 +36,15 @@ export function PageHeader({ title, backHref, right, className }: PageHeaderProp
           </svg>
         </Link>
       ) : (
-        <Image
-          src="/logo-horizontal.png"
-          alt="Creando Gigantes"
-          width={110}
-          height={28}
-          className="object-contain mr-3 flex-shrink-0"
-          priority
-        />
+        <div className="mr-3 flex-shrink-0 h-8 w-8 relative">
+          <Image
+            src="/logo-horizontal.png"
+            alt="Creando Gigantes"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
       )}
 
       <h1 className="flex-1 text-[15px] font-semibold text-[#FAFAFA] truncate">
