@@ -103,6 +103,137 @@ function calcMatchScore(
 
 // ── Name similarity filter ───────────────────────────────────────
 
+// ── Food-type detection for culinary coherence ───────────────────
+//
+// Each "type" groups foods that can reasonably substitute each other
+// within a meal (e.g. all dairy, all meats, all legumes, …).
+// When replacing an ingredient in a recipe, the replacement must belong
+// to the SAME type (or have an unknown type → permissive fallback).
+
+const FOOD_TYPES: Array<{ type: string; keywords: string[] }> = [
+  {
+    type: "lacteo",
+    keywords: [
+      "leche", "yogur", "queso", "nata", "mantequill", "kefir", "cuajada",
+      "ricotta", "cottage", "mozzarell", "cheddar", "parmesano", "mascarpone",
+      "requesón", "skyr", "buttermilk", "ghee",
+    ],
+  },
+  {
+    type: "carne",
+    keywords: [
+      "pollo", "pechuga", "muslo", "ternera", "buey", "cerdo", "lomo",
+      "solomillo", "costilla", "pavo", "conejo", "cordero", "pato", "avestruz",
+      "hamburguesa", "carne picada", "filete",
+    ],
+  },
+  {
+    type: "pescado_marisco",
+    keywords: [
+      "salmon", "atun", "merluza", "bacalao", "dorada", "lubina", "sardina",
+      "caballa", "trucha", "gamba", "langostino", "sepia", "calamar",
+      "mejillon", "pulpo", "clupeido", "rape", "panga", "tilapia",
+    ],
+  },
+  {
+    type: "huevo",
+    keywords: ["huevo", "clara", "yema"],
+  },
+  {
+    type: "embutido",
+    keywords: [
+      "jamon", "chorizo", "salchicha", "mortadela", "fiambre", "bacon",
+      "panceta", "fuet", "salami", "longaniza", "morcilla",
+    ],
+  },
+  {
+    type: "legumbre",
+    keywords: [
+      "lenteja", "garbanzo", "alubia", "judía", "frijol", "hummus",
+      "edamame", "guisante", "haba", "soja texturiz",
+    ],
+  },
+  {
+    type: "proteina_vegetal",
+    keywords: ["tofu", "tempeh", "seitan"],
+  },
+  {
+    type: "cereal_desayuno",
+    keywords: [
+      "cereal", "copos", "granola", "muesli", "salvado",
+      "corn flakes", "special k", "choco", "frosties",
+    ],
+  },
+  {
+    type: "avena",
+    keywords: ["avena", "porridge", "overnight oat"],
+  },
+  {
+    type: "pan_pasta_arroz",
+    keywords: [
+      "arroz", "pasta", "macarron", "espagueti", "fideo", "quinoa",
+      "bulgur", "cuscus", "cous cous", "tostada", " pan ", "baguette",
+      "tortilla de trigo", "wrap",
+    ],
+  },
+  {
+    type: "patata",
+    keywords: ["patata", "boniato", "yuca", "ñame", "mandioca"],
+  },
+  {
+    type: "fruta",
+    keywords: [
+      "manzana", "platano", "naranja", "fresa", "kiwi", "mango", "melon",
+      "sandia", " uva", "pera", "piña", "arandano", "frambuesa", "ciruela",
+      "albaricoque", "cereza", "higo", "datil", "papaya", "maracuya",
+      "lichis", "caqui", "granada", "nectarina", "mandarina", "pomelo",
+    ],
+  },
+  {
+    type: "verdura",
+    keywords: [
+      "espinaca", "brocoli", "zanahoria", "tomate", "pepino", "lechuga",
+      "acelga", "coliflor", "pimiento", "calabacin", "berenjena", "apio",
+      "puerro", "cebolla", "alcachofa", "esparragos", "rabano", "nabo",
+      "remolacha", "champiñon", "seta", "endivia", "canonigos",
+    ],
+  },
+  {
+    type: "frutos_secos_semillas",
+    keywords: [
+      "almendra", " nuez", "anacardo", "pistach", "avellana", "cacahuete",
+      "macadamia", "pipa", "tahini", "mantequilla de", "chia", "lino",
+      "sesamo", "girasol", "calabaza",
+    ],
+  },
+  {
+    type: "aceite",
+    keywords: ["aceite de"],
+  },
+  {
+    type: "bebida_proteica",
+    keywords: [
+      "proteina en polvo", "whey", "caseina", "batido proteico",
+      "protein powder", "suero de leche en polvo",
+    ],
+  },
+];
+
+/**
+ * Returns the culinary type of a food based on keyword matching,
+ * or null if it can't be classified (→ no type filtering applied).
+ */
+function detectFoodType(name: string): string | null {
+  const n = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  for (const { type, keywords } of FOOD_TYPES) {
+    if (keywords.some((kw) => n.includes(kw))) return type;
+  }
+  return null;
+}
+
 /**
  * Normalizes a food name to a list of significant words (length > 3,
  * accents removed, lowercase) to detect same-family foods.
@@ -268,9 +399,26 @@ export async function getRecipeAlternativas(
   });
 
   // Get top 20 alternatives for each food (larger pool = more combinations)
-  const alternativasPerFood = await Promise.all(
+  const rawAlternativasPerFood = await Promise.all(
     recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 20))
   );
+
+  // ── Culinary-type pre-filter ──────────────────────────────────
+  // For each slot, keep only alternatives whose food type matches the
+  // original food's type (e.g. "leche" → only other dairy, not chicken).
+  // If we can't classify the original food, or if filtering leaves fewer
+  // than 2 candidates, fall back to the full macro-equivalent pool.
+  const alternativasPerFood = rawAlternativasPerFood.map((alts, i) => {
+    const origType = detectFoodType(originalItems[i]!.food.name);
+    if (!origType) return alts; // unclassifiable → no restriction
+
+    const typed = alts.filter((alt) => {
+      const altType = detectFoodType(alt.food.name);
+      return !altType || altType === origType; // same type, or alt is unclassifiable
+    });
+
+    return typed.length >= 2 ? typed : alts; // fallback if too few same-type candidates
+  });
 
   // ── Helper: words used by a set of food names ──────────────────
   function familyWordsOf(names: string[]): Set<string> {
