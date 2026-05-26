@@ -267,79 +267,153 @@ export async function getRecipeAlternativas(
     };
   });
 
-  // Get top 10 alternatives for each food item (more candidates to filter from)
+  // Get top 15 alternatives for each food (more pool = better combinations)
   const alternativasPerFood = await Promise.all(
-    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 10))
+    recipeItems.map((item) => getEquivalencias(item.foodId, item.quantity, 15))
   );
 
-  // Generate alternatives by substituting one food at a time
-  const alternativas: RecipeAlternativa[] = [];
-
-  for (let i = 0; i < recipeItems.length; i++) {
-    // Names of ALL OTHER foods in the recipe (to avoid duplicating families)
-    const otherFoodNames = originalItems
-      .filter((_, idx) => idx !== i)
-      .map((item) => item.food.name);
-
-    // Keep only alternatives that don't belong to any other ingredient's family
-    const alts = alternativasPerFood[i]!.filter(
-      (alt) => !otherFoodNames.some((name) => isSameFamily(name, alt.food.name))
-    ).slice(0, 3);
-
-    for (const alt of alts) {
-      const newItems: RecipeItemWithFood[] = originalItems.map((orig, idx) => {
-        if (idx !== i) return orig;
-        return {
-          food: alt.food,
-          quantity: alt.quantity,
-          macros: alt.macros,
-        };
-      });
-
-      const totalMacros: Macros = newItems.reduce(
-        (acc, item) => ({
-          protein: acc.protein + item.macros.protein,
-          carbs: acc.carbs + item.macros.carbs,
-          fat: acc.fat + item.macros.fat,
-          calories: acc.calories + item.macros.calories,
-        }),
-        { protein: 0, carbs: 0, fat: 0, calories: 0 }
-      );
-
-      const originalTotal: Macros = originalItems.reduce(
-        (acc, item) => ({
-          protein: acc.protein + item.macros.protein,
-          carbs: acc.carbs + item.macros.carbs,
-          fat: acc.fat + item.macros.fat,
-          calories: acc.calories + item.macros.calories,
-        }),
-        { protein: 0, carbs: 0, fat: 0, calories: 0 }
-      );
-
-      // diffScore: average % difference across all macros
-      const diffs = [
-        originalTotal.protein > 0
-          ? Math.abs(totalMacros.protein - originalTotal.protein) / originalTotal.protein
-          : 0,
-        originalTotal.carbs > 0
-          ? Math.abs(totalMacros.carbs - originalTotal.carbs) / originalTotal.carbs
-          : 0,
-        originalTotal.fat > 0
-          ? Math.abs(totalMacros.fat - originalTotal.fat) / originalTotal.fat
-          : 0,
-      ];
-      const diffScore = Math.round(
-        (diffs.reduce((a, b) => a + b, 0) / diffs.length) * 100
-      );
-
-      alternativas.push({
-        id: randomUUID(),
-        foods: newItems,
-        totalMacros,
-        diffScore,
-      });
-    }
+  // ── Helper: words used by a set of food names ──────────────────
+  function familyWordsOf(names: string[]): Set<string> {
+    const s = new Set<string>();
+    for (const n of names) nameWords(n).forEach((w) => s.add(w));
+    return s;
   }
 
-  return alternativas.sort((a, b) => a.diffScore - b.diffScore).slice(0, 5);
+  // ── Helper: compute totalMacros and diffScore for a candidate set ──
+  function buildAlternativa(items: RecipeItemWithFood[]): RecipeAlternativa {
+    const totalMacros: Macros = items.reduce(
+      (acc, item) => ({
+        protein: acc.protein + item.macros.protein,
+        carbs: acc.carbs + item.macros.carbs,
+        fat: acc.fat + item.macros.fat,
+        calories: acc.calories + item.macros.calories,
+      }),
+      { protein: 0, carbs: 0, fat: 0, calories: 0 }
+    );
+
+    const originalTotal: Macros = originalItems.reduce(
+      (acc, item) => ({
+        protein: acc.protein + item.macros.protein,
+        carbs: acc.carbs + item.macros.carbs,
+        fat: acc.fat + item.macros.fat,
+        calories: acc.calories + item.macros.calories,
+      }),
+      { protein: 0, carbs: 0, fat: 0, calories: 0 }
+    );
+
+    const diffs = [
+      originalTotal.protein > 0
+        ? Math.abs(totalMacros.protein - originalTotal.protein) / originalTotal.protein
+        : 0,
+      originalTotal.carbs > 0
+        ? Math.abs(totalMacros.carbs - originalTotal.carbs) / originalTotal.carbs
+        : 0,
+      originalTotal.fat > 0
+        ? Math.abs(totalMacros.fat - originalTotal.fat) / originalTotal.fat
+        : 0,
+    ];
+
+    return {
+      id: randomUUID(),
+      foods: items,
+      totalMacros,
+      diffScore: Math.round(
+        (diffs.reduce((a, b) => a + b, 0) / diffs.length) * 100
+      ),
+    };
+  }
+
+  const alternativas: RecipeAlternativa[] = [];
+  const N = recipeItems.length;
+
+  if (N === 1) {
+    // Single food: return top alternatives directly
+    const alts = alternativasPerFood[0]!.slice(0, 5);
+    for (const alt of alts) {
+      alternativas.push(
+        buildAlternativa([{ food: alt.food, quantity: alt.quantity, macros: alt.macros }])
+      );
+    }
+    return alternativas;
+  }
+
+  // All original family words (used to block all original ingredients from appearing in replacements)
+  const allOriginalWords = familyWordsOf(originalItems.map((i) => i.food.name));
+
+  // ── Strategy: for each "anchor" position (the one original food we keep),
+  //    greedily pick the best non-conflicting alternative for every other slot.
+  //    Rule: an alternative recipe shares AT MOST 1 food with the original.
+  //
+  //    For extra variety, try top-3 alternatives for the first non-anchor slot
+  //    and pick the best result. ────────────────────────────────────────────
+
+  for (let anchorIdx = 0; anchorIdx < N; anchorIdx++) {
+    const anchorItem = originalItems[anchorIdx]!;
+    // Words already "taken" by the anchor food — replacements must not share these
+    const takenWords = familyWordsOf([anchorItem.food.name]);
+
+    // Also block replacements that belong to ANY original ingredient's family
+    // (they may not be in the same family as the food they replace, but could
+    //  still be a different original ingredient, violating the ≤1 shared rule)
+    const forbiddenWords = new Set([...allOriginalWords]);
+
+    // Try a few top-picks for each non-anchor slot and collect valid combos
+    function buildCombo(
+      slotOrder: number[],    // positions to fill (all except anchorIdx)
+      slotIdx: number,        // current slot in slotOrder
+      usedWords: Set<string>, // family words already committed to
+      chosen: Map<number, RecipeItemWithFood> // pos → chosen item
+    ): void {
+      if (slotIdx === slotOrder.length) {
+        // All slots filled — build the alternative
+        const items: RecipeItemWithFood[] = originalItems.map((orig, pos) => {
+          if (pos === anchorIdx) return orig;
+          return chosen.get(pos)!;
+        });
+        alternativas.push(buildAlternativa(items));
+        return;
+      }
+
+      const pos = slotOrder[slotIdx]!;
+      const candidates = alternativasPerFood[pos]!;
+
+      let picked = 0;
+      for (const alt of candidates) {
+        if (picked >= 2) break; // try up to 2 options per slot for variety
+        const words = nameWords(alt.food.name);
+        // Reject if shares a family word with anchor, with already-chosen replacements,
+        // or with ANY original ingredient (the ≤1 rule)
+        const conflicts =
+          words.some((w) => usedWords.has(w)) ||
+          words.some((w) => forbiddenWords.has(w));
+        if (conflicts) continue;
+
+        const newUsed = new Set([...usedWords, ...words]);
+        chosen.set(pos, { food: alt.food, quantity: alt.quantity, macros: alt.macros });
+        buildCombo(slotOrder, slotIdx + 1, newUsed, chosen);
+        chosen.delete(pos);
+        picked++;
+      }
+    }
+
+    const nonAnchorSlots = Array.from({ length: N }, (_, i) => i).filter(
+      (i) => i !== anchorIdx
+    );
+
+    buildCombo(nonAnchorSlots, 0, takenWords, new Map());
+  }
+
+  // Deduplicate by food-id set (same combo in different order is the same alternative)
+  const seen = new Set<string>();
+  const unique = alternativas.filter((alt) => {
+    const key = alt.foods
+      .map((f) => f.food.id)
+      .sort()
+      .join("|");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return unique.sort((a, b) => a.diffScore - b.diffScore).slice(0, 5);
 }
