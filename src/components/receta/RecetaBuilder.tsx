@@ -25,7 +25,7 @@ export function RecetaBuilder({
 }: RecetaBuilderProps) {
   return (
     <div className="flex flex-col gap-4">
-      <FoodSearch onSelect={onAdd} placeholder="Añadir alimento a la receta..." />
+      <FoodSearch onSelect={onAdd} placeholder="Añadir alimento a la receta..." clearOnSelect />
 
       {items.length > 0 && (
         <div className="flex flex-col gap-2">

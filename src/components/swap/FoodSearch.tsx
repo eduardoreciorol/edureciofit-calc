@@ -10,6 +10,8 @@ interface FoodSearchProps {
   onSelect: (food: Food) => void;
   selectedFoodId?: string;
   placeholder?: string;
+  /** Si true, borra el texto del input tras seleccionar (útil en recetas multi-alimento) */
+  clearOnSelect?: boolean;
 }
 
 function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number): T {
@@ -20,7 +22,7 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, ms: number)
   }) as T;
 }
 
-export function FoodSearch({ onSelect, selectedFoodId, placeholder }: FoodSearchProps) {
+export function FoodSearch({ onSelect, selectedFoodId, placeholder, clearOnSelect = false }: FoodSearchProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Food[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,7 +106,7 @@ export function FoodSearch({ onSelect, selectedFoodId, placeholder }: FoodSearch
                 selected={food.id === selectedFoodId}
                 onClick={(f) => {
                   onSelect(f);
-                  setQuery(f.name);
+                  setQuery(clearOnSelect ? "" : f.name);
                   setOpen(false);
                 }}
               />
