@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -35,10 +36,10 @@ export function PageHeader({ title, backHref, right, className }: PageHeaderProp
           </svg>
         </Link>
       ) : (
-        <img  // eslint-disable-line @next/next/no-img-element
+        <img
           src="/logo-horizontal.png"
           alt="Creando Gigantes"
-          className="mr-3 flex-shrink-0 h-8 w-8 object-contain"
+          className="mr-3 flex-shrink-0 h-9 w-auto object-contain"
         />
       )}
 
