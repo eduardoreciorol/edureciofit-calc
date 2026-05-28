@@ -9,16 +9,38 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "edureciofit — Calculadora de Equivalencias",
-  description: "Intercambia cualquier alimento por equivalentes con los mismos macronutrientes",
+  title: "Intercambiador de Alimentos — Creando Gigantes",
+  description: "Intercambia cualquier alimento por equivalentes con los mismos macronutrientes. By edureciofit · Creando Gigantes.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "edureciofit calc",
+    title: "Intercambiador CG",
   },
   icons: {
     apple: "/icons/icon-192.png",
+  },
+  openGraph: {
+    title: "Intercambiador de Alimentos — Creando Gigantes",
+    description: "Intercambia cualquier alimento por equivalentes con los mismos macros. By edureciofit.",
+    url: "https://edureciofit-calc.vercel.app",
+    siteName: "Creando Gigantes",
+    images: [
+      {
+        url: "https://edureciofit-calc.vercel.app/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Intercambiador de Alimentos — Creando Gigantes",
+      },
+    ],
+    locale: "es_ES",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Intercambiador de Alimentos — Creando Gigantes",
+    description: "Intercambia cualquier alimento por equivalentes con los mismos macros.",
+    images: ["https://edureciofit-calc.vercel.app/og-image.png"],
   },
 };
 
