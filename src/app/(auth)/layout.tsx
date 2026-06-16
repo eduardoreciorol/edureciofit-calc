@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <img
             src="/logo-horizontal.png"
             alt="Creando Gigantes"
-            style={{ width: "220px", height: "auto", objectFit: "contain" }}
+            style={{ width: "220px", height: "auto", objectFit: "contain", transform: "translateX(10px)" }}
           />
           <h1 className="text-white text-xl font-bold tracking-widest uppercase text-center">
             Intercambiador de Alimentos
