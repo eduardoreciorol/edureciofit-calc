@@ -27,6 +27,12 @@ export async function GET(request: Request) {
   // Auto-create default meals for new users
   await ensureDefaultMeals(user.id);
 
+  // Get daily targets from user profile
+  const userProfile = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { dailyKcal: true, dailyProtein: true, dailyCarbs: true, dailyFat: true },
+  });
+
   // Get all user meals in order
   const meals = await prisma.userMeal.findMany({
     where: { userId: user.id },
@@ -82,7 +88,14 @@ export async function GET(request: Request) {
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
-  return NextResponse.json({ date: dateStr, meals: byMeal, totals });
+  const dailyTargets = userProfile ? {
+    kcal: userProfile.dailyKcal ? Number(userProfile.dailyKcal) : null,
+    protein: userProfile.dailyProtein ? Number(userProfile.dailyProtein) : null,
+    carbs: userProfile.dailyCarbs ? Number(userProfile.dailyCarbs) : null,
+    fat: userProfile.dailyFat ? Number(userProfile.dailyFat) : null,
+  } : null;
+
+  return NextResponse.json({ date: dateStr, meals: byMeal, totals, dailyTargets });
 }
 
 const logSchema = z.object({

@@ -10,7 +10,7 @@ export async function GET() {
 
   const profile = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { id: true, name: true, email: true, harbizEmail: true, role: true },
+    select: { id: true, name: true, email: true, harbizEmail: true, role: true, dailyKcal: true, dailyProtein: true, dailyCarbs: true, dailyFat: true },
   });
 
   if (!profile) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
@@ -21,6 +21,10 @@ export async function GET() {
 const patchSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   harbizEmail: z.string().email().nullable().optional(),
+  dailyKcal: z.number().positive().max(10000).nullable().optional(),
+  dailyProtein: z.number().min(0).max(1000).nullable().optional(),
+  dailyCarbs: z.number().min(0).max(2000).nullable().optional(),
+  dailyFat: z.number().min(0).max(500).nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -35,7 +39,7 @@ export async function PATCH(request: Request) {
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: parsed.data,
-    select: { id: true, name: true, email: true, harbizEmail: true, role: true },
+    select: { id: true, name: true, email: true, harbizEmail: true, role: true, dailyKcal: true, dailyProtein: true, dailyCarbs: true, dailyFat: true },
   });
 
   return NextResponse.json(updated);

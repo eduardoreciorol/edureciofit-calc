@@ -36,6 +36,10 @@ model User {
   invitedUsers User[]       @relation("InvitedBy")
   invitations  Invitation[] @relation("InvitedByAdmin")
   harbizEmail  String?      @map("harbiz_email")
+  dailyKcal    Decimal?     @db.Decimal(8, 1) @map("daily_kcal")
+  dailyProtein Decimal?     @db.Decimal(8, 2) @map("daily_protein")
+  dailyCarbs   Decimal?     @db.Decimal(8, 2) @map("daily_carbs")
+  dailyFat     Decimal?     @db.Decimal(8, 2) @map("daily_fat")
   createdFoods Food[]
   diaryLogs    DiaryLog[]
   userMeals    UserMeal[]
