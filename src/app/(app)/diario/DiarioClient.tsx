@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MealSection } from "./MealSection";
-import { AddFoodModal } from "./AddFoodModal";
+import { AddFoodModal, type FoodResult } from "./AddFoodModal";
 import { EditGramsModal } from "./EditGramsModal";
 import { MealSettingsSheet } from "./MealSettingsSheet";
 import { SugerenciasModal } from "./SugerenciasModal";
@@ -80,20 +80,80 @@ export function DiarioClient() {
 
   useEffect(() => { load(date); }, [date, load]);
 
+  // Optimistic delete: remove from UI immediately, sync in background
   const handleDelete = async (id: string) => {
-    await fetch(`/api/diario/${id}`, { method: "DELETE" });
-    load(date);
+    setData((prev) => {
+      if (!prev) return prev;
+      const entry = prev.meals.flatMap((m) => m.entries).find((e) => e.id === id);
+      if (!entry) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map((m) => ({ ...m, entries: m.entries.filter((e) => e.id !== id) })),
+        totals: {
+          kcal: prev.totals.kcal - entry.kcal,
+          protein: prev.totals.protein - entry.protein,
+          carbs: prev.totals.carbs - entry.carbs,
+          fat: prev.totals.fat - entry.fat,
+        },
+      };
+    });
+    const res = await fetch(`/api/diario/${id}`, { method: "DELETE" });
+    if (!res.ok) load(date); // revert on error
   };
 
-  const handleAdd = async (foodId: string, grams: number) => {
+  // Optimistic add: update UI immediately with calculated macros
+  const handleAdd = async (food: FoodResult, grams: number) => {
     if (!addTarget) return;
-    await fetch("/api/diario", {
+    setAddTarget(null);
+    const ratio = grams / 100;
+    const tempId = `temp-${Date.now()}`;
+    const optimistic: DiaryEntry = {
+      id: tempId,
+      foodId: food.id,
+      name: food.name,
+      brand: food.brand,
+      grams,
+      kcal: Math.round(food.calories * ratio * 10) / 10,
+      protein: Math.round(food.protein * ratio * 100) / 100,
+      carbs: Math.round(food.carbs * ratio * 100) / 100,
+      fat: Math.round(food.fat * ratio * 100) / 100,
+    };
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meals: prev.meals.map((m) =>
+          m.id === addTarget.id ? { ...m, entries: [...m.entries, optimistic] } : m
+        ),
+        totals: {
+          kcal: prev.totals.kcal + optimistic.kcal,
+          protein: prev.totals.protein + optimistic.protein,
+          carbs: prev.totals.carbs + optimistic.carbs,
+          fat: prev.totals.fat + optimistic.fat,
+        },
+      };
+    });
+    const res = await fetch("/api/diario", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, userMealId: addTarget.id, foodId, grams }),
+      body: JSON.stringify({ date, userMealId: addTarget.id, foodId: food.id, grams }),
     });
-    setAddTarget(null);
-    load(date);
+    if (res.ok) {
+      const created = await res.json() as DiaryEntry & { foodId: string };
+      // Replace temp entry with real server ID
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          meals: prev.meals.map((m) => ({
+            ...m,
+            entries: m.entries.map((e) => e.id === tempId ? { ...optimistic, id: created.id } : e),
+          })),
+        };
+      });
+    } else {
+      load(date); // revert on error
+    }
   };
 
   const handleEditSave = async (id: string, grams: number) => {
@@ -114,7 +174,6 @@ export function DiarioClient() {
       body: JSON.stringify({ date, userMealId: sugerenciasMeal.id, foodId, grams }),
     });
     load(date);
-    // Keep modal open to show updated state
   };
 
   const totals = data?.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
@@ -325,8 +384,8 @@ function DailyTargetsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-t-2xl border border-[#27272A]">
-        <div className="flex items-center justify-between px-4 py-4 border-b border-[#27272A]">
+      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-t-2xl border border-[#27272A] max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[#27272A] flex-shrink-0">
           <h2 className="text-white font-semibold text-sm">Objetivos diarios</h2>
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-white p-1">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -334,7 +393,7 @@ function DailyTargetsModal({
             </svg>
           </button>
         </div>
-        <div className="px-4 py-5 flex flex-col gap-4">
+        <div className="px-4 py-5 flex flex-col gap-4 overflow-y-auto">
           <p className="text-xs text-[#A1A1AA]">
             Introduce tus macros objetivo. Las calorías se calculan solas.
           </p>

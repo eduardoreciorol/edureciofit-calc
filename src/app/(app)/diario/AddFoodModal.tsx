@@ -12,18 +12,29 @@ type Food = {
   fat: number;
 };
 
+export type FoodResult = {
+  id: string;
+  name: string;
+  brand: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
 type Props = {
   meal: string;
-  onConfirm: (foodId: string, grams: number) => void;
+  onConfirm: (food: FoodResult, grams: number) => void;
   onClose: () => void;
 };
 
 export function AddFoodModal({ meal, onConfirm, onClose }: Props) {
   const [step, setStep] = useState<"search" | "grams">("search");
   const [query, setQuery] = useState("");
-  const [foods, setFoods] = useState<Food[]>([]);
+  const [foods, setFoods] = useState<FoodResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<Food | null>(null);
+  const searchCache = useRef<Map<string, FoodResult[]>>(new Map());
+  const [selected, setSelected] = useState<FoodResult | null>(null);
   const [grams, setGrams] = useState("100");
   const searchRef = useRef<HTMLInputElement>(null);
   const gramsRef = useRef<HTMLInputElement>(null);
@@ -38,12 +49,16 @@ export function AddFoodModal({ meal, onConfirm, onClose }: Props) {
 
   useEffect(() => {
     if (query.length < 2) { setFoods([]); return; }
+    // Return cached result instantly if available
+    const cached = searchCache.current.get(query);
+    if (cached) { setFoods(cached); return; }
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
         const res = await fetch(`/api/alimentos?q=${encodeURIComponent(query)}&limit=15`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await res.json() as { foods: FoodResult[] };
+          searchCache.current.set(query, data.foods ?? []);
           setFoods(data.foods ?? []);
         }
       } finally {
@@ -56,14 +71,14 @@ export function AddFoodModal({ meal, onConfirm, onClose }: Props) {
   const gramsNum = parseFloat(grams);
   const ratio = isNaN(gramsNum) || gramsNum <= 0 ? 0 : gramsNum / 100;
 
-  const handleSelect = (food: Food) => {
+  const handleSelect = (food: FoodResult) => {
     setSelected(food);
     setStep("grams");
   };
 
   const handleConfirm = () => {
     if (!selected || !gramsNum || gramsNum <= 0) return;
-    onConfirm(selected.id, gramsNum);
+    onConfirm(selected, gramsNum);
   };
 
   return (

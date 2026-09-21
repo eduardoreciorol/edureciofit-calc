@@ -24,36 +24,36 @@ export async function GET(request: Request) {
 
   const date = new Date(dateStr + "T00:00:00.000Z");
 
-  // Auto-create default meals for new users
-  await ensureDefaultMeals(user.id);
+  // Parallelise all reads — userProfile, meals, and logs hit the DB simultaneously
+  const [userProfile, meals, logs] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { dailyKcal: true, dailyProtein: true, dailyCarbs: true, dailyFat: true },
+    }),
+    prisma.userMeal.findMany({
+      where: { userId: user.id },
+      orderBy: { order: "asc" },
+      select: { id: true, name: true, order: true, targetKcal: true, targetProtein: true, targetCarbs: true, targetFat: true },
+    }),
+    prisma.diaryLog.findMany({
+      where: { userId: user.id, date },
+      include: { food: { select: { name: true, brand: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
-  // Get daily targets from user profile
-  const userProfile = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { dailyKcal: true, dailyProtein: true, dailyCarbs: true, dailyFat: true },
-  });
-
-  // Get all user meals in order
-  const meals = await prisma.userMeal.findMany({
-    where: { userId: user.id },
-    orderBy: { order: "asc" },
-    select: {
-      id: true,
-      name: true,
-      order: true,
-      targetKcal: true,
-      targetProtein: true,
-      targetCarbs: true,
-      targetFat: true,
-    },
-  });
-
-  // Get all diary logs for the day
-  const logs = await prisma.diaryLog.findMany({
-    where: { userId: user.id, date },
-    include: { food: { select: { name: true, brand: true } } },
-    orderBy: { createdAt: "asc" },
-  });
+  // Create default meals only when truly empty (first ever visit)
+  if (meals.length === 0) {
+    await prisma.userMeal.createMany({
+      data: DEFAULT_MEALS.map((name, i) => ({ userId: user.id, name, order: i })),
+    });
+    const newMeals = await prisma.userMeal.findMany({
+      where: { userId: user.id },
+      orderBy: { order: "asc" },
+      select: { id: true, name: true, order: true, targetKcal: true, targetProtein: true, targetCarbs: true, targetFat: true },
+    });
+    meals.push(...newMeals);
+  }
 
   const byMeal = meals.map((meal) => ({
     id: meal.id,
