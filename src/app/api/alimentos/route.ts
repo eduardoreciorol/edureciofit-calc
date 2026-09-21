@@ -88,9 +88,11 @@ export async function GET(request: Request) {
   }
 
   // Traemos más candidatos para poder re-rankear correctamente
+  // Solo fuentes harbiz y custom — openfoodfacts excluido
   const candidates = await prisma.food.findMany({
     where: {
       isActive: true,
+      source: { in: ["harbiz", "custom"] },
       ...(category ? { category } : {}),
       OR: [
         { name: { contains: q, mode: "insensitive" } },

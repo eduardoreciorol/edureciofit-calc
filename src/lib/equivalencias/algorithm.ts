@@ -336,6 +336,7 @@ export async function getEquivalencias(
     where: {
       dominantMacro: food.dominantMacro,
       isActive: true,
+      source: { in: ["harbiz", "custom"] },
       id: { not: foodId },
     },
     take: 500,
