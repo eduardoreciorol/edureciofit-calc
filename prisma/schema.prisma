@@ -35,6 +35,7 @@ model User {
   invitedBy    User?        @relation("InvitedBy", fields: [invitedById], references: [id])
   invitedUsers User[]       @relation("InvitedBy")
   invitations  Invitation[] @relation("InvitedByAdmin")
+  harbizEmail  String?      @map("harbiz_email")
   createdFoods Food[]
   diaryLogs    DiaryLog[]
   userMeals    UserMeal[]

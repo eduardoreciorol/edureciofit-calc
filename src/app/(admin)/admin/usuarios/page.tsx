@@ -10,6 +10,7 @@ interface UserRow {
   id: string;
   email: string;
   name: string | null;
+  harbizEmail: string | null;
   role: string;
   isActive: boolean;
   createdAt: string;
@@ -141,6 +142,9 @@ export default function UsuariosPage() {
                     <td className="px-4 py-3">
                       <p className="text-[#FAFAFA] font-medium">{user.name ?? "—"}</p>
                       <p className="text-xs text-[#A1A1AA]">{user.email}</p>
+                      {user.harbizEmail && (
+                        <p className="text-xs text-[#3DD6E0] mt-0.5">Harbiz: {user.harbizEmail}</p>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={user.role === "admin" ? "primary" : "muted"}>

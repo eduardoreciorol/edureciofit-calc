@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         id: true,
         email: true,
         name: true,
+        harbizEmail: true,
         role: true,
         isActive: true,
         createdAt: true,

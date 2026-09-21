@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { PerfilClient } from "./PerfilClient";
 
-export default function AppRoot() {
-  redirect("/swap");
+export const metadata = { title: "Mi perfil — Creando Gigantes" };
+
+export default function HomePage() {
+  return <PerfilClient />;
 }
