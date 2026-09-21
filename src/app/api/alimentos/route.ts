@@ -121,22 +121,48 @@ export async function GET(request: Request) {
   });
 
   // Re-rankear por relevancia
-  const scored = candidates
-    .map((f) => ({
-      food: f,
-      score: scoreFood(f.name, f.brand, f.source, q),
-    }))
+  const sorted = candidates
+    .map((f) => ({ food: f, score: scoreFood(f.name, f.brand, f.source, q) }))
+    .sort((a, b) => b.score - a.score);
+
+  // Deduplicar: si dos alimentos tienen el mismo nombre normalizado (y misma marca),
+  // hacer la media de sus macros y devolver una sola entrada.
+  const seen = new Map<string, typeof sorted>();
+  for (const item of sorted) {
+    const key = norm(item.food.name) + "|" + norm(item.food.brand ?? "");
+    if (!seen.has(key)) seen.set(key, []);
+    seen.get(key)!.push(item);
+  }
+
+  const deduped = Array.from(seen.values()).map((group) => {
+    // El primero del grupo ya tiene el mayor score (array ordenado)
+    const best = group[0].food;
+    const n = group.length;
+    const avg = (fn: (f: typeof best) => number) =>
+      group.reduce((sum, g) => sum + fn(g.food), 0) / n;
+
+    return {
+      id: best.id,
+      name: best.name,
+      brand: best.brand,
+      category: best.category,
+      calories: Math.round(avg((f) => Number(f.calories)) * 10) / 10,
+      protein: Math.round(avg((f) => Number(f.protein)) * 100) / 100,
+      carbs: Math.round(avg((f) => Number(f.carbs)) * 100) / 100,
+      fat: Math.round(avg((f) => Number(f.fat)) * 100) / 100,
+      fiber: best.fiber !== null
+        ? Math.round(avg((f) => (f.fiber ? Number(f.fiber) : 0)) * 100) / 100
+        : null,
+      dominantMacro: best.dominantMacro as DominantMacro,
+      source: best.source,
+      score: group[0].score,
+    };
+  });
+
+  const result = deduped
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map(({ food: f }) => ({
-      ...f,
-      calories: Number(f.calories),
-      protein: Number(f.protein),
-      carbs: Number(f.carbs),
-      fat: Number(f.fat),
-      fiber: f.fiber ? Number(f.fiber) : null,
-      dominantMacro: f.dominantMacro as DominantMacro,
-    }));
+    .map(({ score: _score, ...f }) => f);
 
-  return NextResponse.json({ foods: scored });
+  return NextResponse.json({ foods: result });
 }
