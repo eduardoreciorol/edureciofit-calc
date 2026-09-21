@@ -3,6 +3,17 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+const DEFAULT_MEALS = ["Desayuno", "Almuerzo", "Comida", "Merienda", "Cena"];
+
+async function ensureDefaultMeals(userId: string) {
+  const count = await prisma.userMeal.count({ where: { userId } });
+  if (count === 0) {
+    await prisma.userMeal.createMany({
+      data: DEFAULT_MEALS.map((name, i) => ({ userId, name, order: i })),
+    });
+  }
+}
+
 export async function GET(request: Request) {
   const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -12,6 +23,9 @@ export async function GET(request: Request) {
   const dateStr = searchParams.get("date") ?? new Date().toLocaleDateString("sv-SE");
 
   const date = new Date(dateStr + "T00:00:00.000Z");
+
+  // Auto-create default meals for new users
+  await ensureDefaultMeals(user.id);
 
   // Get all user meals in order
   const meals = await prisma.userMeal.findMany({
