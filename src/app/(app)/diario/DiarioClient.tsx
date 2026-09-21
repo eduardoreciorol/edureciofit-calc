@@ -292,18 +292,20 @@ function DailyTargetsModal({
   onSave: (t: { dailyKcal: number | null; dailyProtein: number | null; dailyCarbs: number | null; dailyFat: number | null }) => Promise<void>;
   onClose: () => void;
 }) {
-  const [kcal, setKcal] = useState<number | null>(current?.kcal ?? null);
   const [protein, setProtein] = useState<number | null>(current?.protein ?? null);
   const [carbs, setCarbs] = useState<number | null>(current?.carbs ?? null);
   const [fat, setFat] = useState<number | null>(current?.fat ?? null);
   const [saving, setSaving] = useState(false);
 
+  const autoKcal = (protein !== null || carbs !== null || fat !== null)
+    ? Math.round(((protein ?? 0) * 4) + ((carbs ?? 0) * 4) + ((fat ?? 0) * 9))
+    : null;
+
   const numInput = (
     label: string,
     value: number | null,
     onChange: (v: number | null) => void,
-    color: string,
-    unit = "g"
+    color: string
   ) => (
     <div className="flex items-center gap-3">
       <label className="text-sm font-medium flex-1" style={{ color }}>{label}</label>
@@ -316,7 +318,7 @@ function DailyTargetsModal({
         placeholder="—"
         className="w-24 bg-[#09090B] border border-[#27272A] rounded-lg px-3 py-1.5 text-white text-right text-sm focus:outline-none focus:border-[#3DD6E0]"
       />
-      <span className="text-xs text-[#A1A1AA] w-6">{unit}</span>
+      <span className="text-xs text-[#A1A1AA] w-4">g</span>
     </div>
   );
 
@@ -334,16 +336,25 @@ function DailyTargetsModal({
         </div>
         <div className="px-4 py-5 flex flex-col gap-4">
           <p className="text-xs text-[#A1A1AA]">
-            Fija tus objetivos del día. En el resumen verás cuánto te queda o si te has pasado.
+            Introduce tus macros objetivo. Las calorías se calculan solas.
           </p>
-          {numInput("Calorías", kcal, setKcal, "#A1A1AA", "kcal")}
           {numInput("Proteína", protein, setProtein, "#D4175A")}
           {numInput("Hidratos", carbs, setCarbs, "#3DD6E0")}
           {numInput("Grasa", fat, setFat, "#F59E0B")}
+
+          {/* Auto-calculated kcal */}
+          <div className="flex items-center gap-3 border-t border-[#27272A] pt-3">
+            <span className="text-sm font-medium flex-1 text-[#A1A1AA]">Calorías totales</span>
+            <span className="w-24 text-right font-bold text-lg text-[#3DD6E0]">
+              {autoKcal !== null ? autoKcal : "—"}
+            </span>
+            <span className="text-xs text-[#A1A1AA] w-4">kcal</span>
+          </div>
+
           <button
             onClick={async () => {
               setSaving(true);
-              await onSave({ dailyKcal: kcal, dailyProtein: protein, dailyCarbs: carbs, dailyFat: fat });
+              await onSave({ dailyKcal: autoKcal, dailyProtein: protein, dailyCarbs: carbs, dailyFat: fat });
               setSaving(false);
             }}
             disabled={saving}
