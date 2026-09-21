@@ -10,16 +10,38 @@ type Props = {
 };
 
 type Tab = "comidas" | "objetivos";
+type TargetMode = "manual" | "pct";
+
+// kcal per gram for each macro
+const KCAL_PER_G = { protein: 4, carbs: 4, fat: 9 };
+
+function pctToGrams(kcal: number, pct: number, macro: keyof typeof KCAL_PER_G) {
+  return Math.round((kcal * (pct / 100)) / KCAL_PER_G[macro] * 10) / 10;
+}
 
 export function MealSettingsSheet({ meal, allMeals, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("objetivos");
+  const [targetMode, setTargetMode] = useState<TargetMode>("manual");
   const [editingMeal, setEditingMeal] = useState(meal);
+  const [pct, setPct] = useState({ protein: 30, carbs: 45, fat: 25 });
   const [allMealsState, setAllMealsState] = useState(allMeals);
   const [newMealName, setNewMealName] = useState("");
   const [saving, setSaving] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [error, setError] = useState("");
+
+  const pctTotal = pct.protein + pct.carbs + pct.fat;
+  const pctRemaining = 100 - pctTotal;
+
+  // When in % mode, sync gram targets from kcal + percentages
+  const pctGrams = editingMeal.targetKcal
+    ? {
+        protein: pctToGrams(editingMeal.targetKcal, pct.protein, "protein"),
+        carbs: pctToGrams(editingMeal.targetKcal, pct.carbs, "carbs"),
+        fat: pctToGrams(editingMeal.targetKcal, pct.fat, "fat"),
+      }
+    : null;
 
   const patchMeal = async (id: string, data: Record<string, unknown>) => {
     const res = await fetch(`/api/diario/comidas/${id}`, {
@@ -35,12 +57,20 @@ export function MealSettingsSheet({ meal, allMeals, onClose }: Props) {
     setSaving(true);
     setError("");
     try {
-      await patchMeal(editingMeal.id, {
-        targetKcal: editingMeal.targetKcal,
-        targetProtein: editingMeal.targetProtein,
-        targetCarbs: editingMeal.targetCarbs,
-        targetFat: editingMeal.targetFat,
-      });
+      const targets = targetMode === "pct" && pctGrams
+        ? {
+            targetKcal: editingMeal.targetKcal,
+            targetProtein: pctGrams.protein,
+            targetCarbs: pctGrams.carbs,
+            targetFat: pctGrams.fat,
+          }
+        : {
+            targetKcal: editingMeal.targetKcal,
+            targetProtein: editingMeal.targetProtein,
+            targetCarbs: editingMeal.targetCarbs,
+            targetFat: editingMeal.targetFat,
+          };
+      await patchMeal(editingMeal.id, targets);
       onClose();
     } catch {
       setError("No se pudo guardar. Inténtalo de nuevo.");
@@ -139,27 +169,106 @@ export function MealSettingsSheet({ meal, allMeals, onClose }: Props) {
           {tab === "objetivos" ? (
             <div className="flex flex-col gap-4">
               <p className="text-xs text-[#A1A1AA]">
-                Fija los macros objetivo de <span className="text-white font-medium">{editingMeal.name}</span>. Déjalo vacío si no quieres objetivo para ese macro.
+                Objetivos de <span className="text-white font-medium">{editingMeal.name}</span>.
               </p>
 
-              {numericField("Proteína", editingMeal.targetProtein, (v) => setEditingMeal((m) => ({ ...m, targetProtein: v })), "#D4175A")}
-              {numericField("Hidratos", editingMeal.targetCarbs, (v) => setEditingMeal((m) => ({ ...m, targetCarbs: v })), "#3DD6E0")}
-              {numericField("Grasa", editingMeal.targetFat, (v) => setEditingMeal((m) => ({ ...m, targetFat: v })), "#F59E0B")}
-
-              <div className="border-t border-[#27272A] pt-3">
-                {numericField("Calorías", editingMeal.targetKcal, (v) => setEditingMeal((m) => ({ ...m, targetKcal: v })), "#A1A1AA")}
-                <p className="text-[10px] text-[#52525B] mt-1">Opcional · solo para referencia visual</p>
+              {/* Mode toggle */}
+              <div className="flex rounded-lg bg-[#09090B] p-0.5 border border-[#27272A]">
+                {(["manual", "pct"] as TargetMode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setTargetMode(m)}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                      targetMode === m ? "bg-[#27272A] text-white" : "text-[#A1A1AA]"
+                    }`}
+                  >
+                    {m === "manual" ? "Manual (gramos)" : "Por porcentaje"}
+                  </button>
+                ))}
               </div>
+
+              {/* Calories — always visible */}
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium flex-1 text-[#A1A1AA]">Calorías</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={5000}
+                  step={1}
+                  value={editingMeal.targetKcal ?? ""}
+                  onChange={(e) => setEditingMeal((prev) => ({ ...prev, targetKcal: e.target.value === "" ? null : parseFloat(e.target.value) }))}
+                  placeholder="—"
+                  className="w-24 bg-[#09090B] border border-[#27272A] rounded-lg px-3 py-1.5 text-white text-right text-sm focus:outline-none focus:border-[#3DD6E0]"
+                />
+                <span className="text-xs text-[#A1A1AA] w-8">kcal</span>
+              </div>
+
+              {targetMode === "manual" ? (
+                <>
+                  {numericField("Proteína", editingMeal.targetProtein, (v) => setEditingMeal((m) => ({ ...m, targetProtein: v })), "#D4175A")}
+                  {numericField("Hidratos", editingMeal.targetCarbs, (v) => setEditingMeal((m) => ({ ...m, targetCarbs: v })), "#3DD6E0")}
+                  {numericField("Grasa", editingMeal.targetFat, (v) => setEditingMeal((m) => ({ ...m, targetFat: v })), "#F59E0B")}
+                </>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {!editingMeal.targetKcal && (
+                    <p className="text-xs text-[#F59E0B] bg-[#F59E0B]/10 rounded-lg px-3 py-2">
+                      Introduce las calorías primero para calcular los gramos.
+                    </p>
+                  )}
+
+                  {/* Percentage indicator */}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-[#A1A1AA]">Total asignado</span>
+                    <span className={`text-xs font-bold ${pctTotal === 100 ? "text-[#22C55E]" : pctTotal > 100 ? "text-red-400" : "text-[#F59E0B]"}`}>
+                      {pctTotal}% {pctTotal !== 100 && `(${pctRemaining > 0 ? "+" : ""}${pctRemaining}% restante)`}
+                    </span>
+                  </div>
+
+                  {/* Distribution bar */}
+                  <div className="h-2 rounded-full overflow-hidden bg-[#09090B] flex">
+                    <div style={{ width: `${Math.min(pct.protein, 100)}%`, background: "#D4175A" }} className="transition-all" />
+                    <div style={{ width: `${Math.min(pct.carbs, 100 - pct.protein)}%`, background: "#3DD6E0" }} className="transition-all" />
+                    <div style={{ width: `${Math.min(pct.fat, 100 - pct.protein - pct.carbs)}%`, background: "#F59E0B" }} className="transition-all" />
+                  </div>
+
+                  {/* Percentage inputs */}
+                  {([
+                    { label: "Proteína", key: "protein" as const, color: "#D4175A" },
+                    { label: "Hidratos", key: "carbs" as const, color: "#3DD6E0" },
+                    { label: "Grasa", key: "fat" as const, color: "#F59E0B" },
+                  ]).map(({ label, key, color }) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <label className="text-sm font-medium flex-1" style={{ color }}>{label}</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={pct[key]}
+                          onChange={(e) => setPct((p) => ({ ...p, [key]: Math.max(0, Math.min(100, Number(e.target.value) || 0)) }))}
+                          className="w-16 bg-[#09090B] border border-[#27272A] rounded-lg px-2 py-1.5 text-white text-right text-sm focus:outline-none focus:border-[#3DD6E0]"
+                        />
+                        <span className="text-xs text-[#A1A1AA]">%</span>
+                      </div>
+                      <span className="text-xs text-[#52525B] w-16 text-right">
+                        {pctGrams ? `${pctGrams[key]}g` : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {error && <p className="text-xs text-red-400">{error}</p>}
 
               <button
                 onClick={handleSaveTargets}
-                disabled={saving}
+                disabled={saving || (targetMode === "pct" && pctTotal !== 100)}
                 className="w-full py-3 rounded-xl font-bold text-sm text-black disabled:opacity-40"
                 style={{ background: "linear-gradient(90deg, #3DD6E0, #D4175A)" }}
               >
-                {saving ? "Guardando..." : "Guardar objetivos"}
+                {saving ? "Guardando..." : targetMode === "pct" && pctTotal !== 100 ? `Falta ${pctRemaining}% por distribuir` : "Guardar objetivos"}
               </button>
             </div>
           ) : (
