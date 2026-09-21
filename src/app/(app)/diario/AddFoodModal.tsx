@@ -82,9 +82,9 @@ export function AddFoodModal({ meal, onConfirm, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-t-2xl sm:rounded-2xl border border-[#27272A] max-h-[80vh] flex flex-col">
+      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-2xl border border-[#27272A] max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b border-[#27272A]">
           <div className="flex items-center gap-2">

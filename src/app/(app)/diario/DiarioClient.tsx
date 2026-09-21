@@ -382,9 +382,9 @@ function DailyTargetsModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-t-2xl border border-[#27272A] max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-2xl border border-[#27272A] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-4 border-b border-[#27272A] flex-shrink-0">
           <h2 className="text-white font-semibold text-sm">Objetivos diarios</h2>
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-white p-1">

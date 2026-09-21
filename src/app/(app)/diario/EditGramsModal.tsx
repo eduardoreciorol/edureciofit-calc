@@ -23,9 +23,9 @@ export function EditGramsModal({ entry, onSave, onClose }: Props) {
   const perGram = entry.kcal / entry.grams;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-t-2xl sm:rounded-2xl border border-[#27272A]">
+      <div className="relative w-full max-w-sm mx-auto bg-[#18181B] rounded-2xl border border-[#27272A]">
         <div className="flex items-center justify-between px-4 py-4 border-b border-[#27272A]">
           <h2 className="text-white font-semibold text-sm">Editar cantidad</h2>
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-white p-1">
