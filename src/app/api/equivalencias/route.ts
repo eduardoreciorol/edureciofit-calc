@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     calories: food.calories.toNumber() * factor,
   };
 
-  const equivalencias = await getEquivalencias(foodId, qty);
+  const equivalencias = await getEquivalencias(foodId, qty, 100);
 
   return NextResponse.json({
     source_food: {
