@@ -25,14 +25,6 @@ enum FoodSource {
   harbiz
 }
 
-enum MealSlot {
-  desayuno
-  almuerzo
-  comida
-  merienda
-  cena
-}
-
 model User {
   id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String       @unique
@@ -45,9 +37,27 @@ model User {
   invitations  Invitation[] @relation("InvitedByAdmin")
   createdFoods Food[]
   diaryLogs    DiaryLog[]
+  userMeals    UserMeal[]
   createdAt    DateTime     @default(now()) @map("created_at")
 
   @@map("users")
+}
+
+model UserMeal {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String     @map("user_id") @db.Uuid
+  user          User       @relation(fields: [userId], references: [id])
+  name          String
+  order         Int
+  targetKcal    Decimal?   @db.Decimal(8, 1) @map("target_kcal")
+  targetProtein Decimal?   @db.Decimal(8, 2) @map("target_protein")
+  targetCarbs   Decimal?   @db.Decimal(8, 2) @map("target_carbs")
+  targetFat     Decimal?   @db.Decimal(8, 2) @map("target_fat")
+  diaryLogs     DiaryLog[]
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@index([userId, order])
+  @@map("user_meals")
 }
 
 model Invitation {
@@ -90,20 +100,22 @@ model Food {
 }
 
 model DiaryLog {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  user      User     @relation(fields: [userId], references: [id])
-  date      DateTime @db.Date
-  meal      MealSlot
-  foodId    String   @map("food_id") @db.Uuid
-  food      Food     @relation(fields: [foodId], references: [id])
-  grams     Decimal  @db.Decimal(8, 1)
-  kcal      Decimal  @db.Decimal(8, 1)
-  protein   Decimal  @db.Decimal(8, 2)
-  carbs     Decimal  @db.Decimal(8, 2)
-  fat       Decimal  @db.Decimal(8, 2)
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  user       User     @relation(fields: [userId], references: [id])
+  date       DateTime @db.Date
+  userMealId String   @map("user_meal_id") @db.Uuid
+  userMeal   UserMeal @relation(fields: [userMealId], references: [id], onDelete: Cascade)
+  foodId     String   @map("food_id") @db.Uuid
+  food       Food     @relation(fields: [foodId], references: [id])
+  grams      Decimal  @db.Decimal(8, 1)
+  kcal       Decimal  @db.Decimal(8, 1)
+  protein    Decimal  @db.Decimal(8, 2)
+  carbs      Decimal  @db.Decimal(8, 2)
+  fat        Decimal  @db.Decimal(8, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([userId, date])
+  @@index([userMealId])
   @@map("diary_logs")
 }

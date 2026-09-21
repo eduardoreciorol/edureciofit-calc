@@ -5,8 +5,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { MealSection } from "./MealSection";
 import { AddFoodModal } from "./AddFoodModal";
 import { EditGramsModal } from "./EditGramsModal";
-
-type MealSlot = "desayuno" | "almuerzo" | "comida" | "merienda" | "cena";
+import { MealSettingsSheet } from "./MealSettingsSheet";
+import { SugerenciasModal } from "./SugerenciasModal";
 
 export type DiaryEntry = {
   id: string;
@@ -20,27 +20,32 @@ export type DiaryEntry = {
   fat: number;
 };
 
+export type UserMeal = {
+  id: string;
+  name: string;
+  order: number;
+  targetKcal: number | null;
+  targetProtein: number | null;
+  targetCarbs: number | null;
+  targetFat: number | null;
+  entries: DiaryEntry[];
+};
+
 type DiaryData = {
-  byMeal: Record<MealSlot, DiaryEntry[]>;
+  meals: UserMeal[];
   totals: { kcal: number; protein: number; carbs: number; fat: number };
 };
 
-const MEAL_LABELS: Record<MealSlot, string> = {
-  desayuno: "Desayuno",
-  almuerzo: "Almuerzo",
-  comida: "Comida",
-  merienda: "Merienda",
-  cena: "Cena",
-};
-
-const MEALS: MealSlot[] = ["desayuno", "almuerzo", "comida", "merienda", "cena"];
-
 function todayStr() {
-  return new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD local
+  return new Date().toLocaleDateString("sv-SE");
 }
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + "T12:00:00");
+  const today = todayStr();
+  const yesterday = offsetDate(today, -1);
+  if (dateStr === today) return "Hoy";
+  if (dateStr === yesterday) return "Ayer";
   return d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 }
 
@@ -54,8 +59,10 @@ export function DiarioClient() {
   const [date, setDate] = useState(todayStr);
   const [data, setData] = useState<DiaryData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [addTarget, setAddTarget] = useState<MealSlot | null>(null);
-  const [editTarget, setEditTarget] = useState<{ entry: DiaryEntry; meal: MealSlot } | null>(null);
+  const [addTarget, setAddTarget] = useState<UserMeal | null>(null);
+  const [editTarget, setEditTarget] = useState<{ entry: DiaryEntry; meal: UserMeal } | null>(null);
+  const [settingsMeal, setSettingsMeal] = useState<UserMeal | null>(null);
+  const [sugerenciasMeal, setSugerenciasMeal] = useState<UserMeal | null>(null);
 
   const load = useCallback(async (d: string) => {
     setLoading(true);
@@ -79,7 +86,7 @@ export function DiarioClient() {
     await fetch("/api/diario", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, meal: addTarget, foodId, grams }),
+      body: JSON.stringify({ date, userMealId: addTarget.id, foodId, grams }),
     });
     setAddTarget(null);
     load(date);
@@ -95,41 +102,47 @@ export function DiarioClient() {
     load(date);
   };
 
+  const handleSugerenciaAdd = async (foodId: string, grams: number) => {
+    if (!sugerenciasMeal) return;
+    await fetch("/api/diario", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, userMealId: sugerenciasMeal.id, foodId, grams }),
+    });
+    load(date);
+    // Keep modal open to show updated state
+  };
+
   const totals = data?.totals ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 };
+  const isToday = date === todayStr();
 
   return (
     <div className="flex flex-col min-h-screen">
       <PageHeader title="Diario" />
 
       {/* Date navigator */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#18181B] border-b border-[#27272A]">
+      <div className="flex items-center justify-between px-4 py-3 bg-[#18181B] border-b border-[#27272A] sticky top-0 z-10">
         <button
           onClick={() => setDate((d) => offsetDate(d, -1))}
           className="p-2 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft />
         </button>
         <button
-          onClick={() => setDate(todayStr())}
+          onClick={() => !isToday && setDate(todayStr())}
           className="flex flex-col items-center"
         >
-          <span className="text-white font-semibold capitalize text-sm">
-            {formatDate(date)}
-          </span>
-          {date !== todayStr() && (
+          <span className="text-white font-semibold capitalize text-sm">{formatDate(date)}</span>
+          {!isToday && (
             <span className="text-[10px] text-[#3DD6E0] mt-0.5">Toca para ir a hoy</span>
           )}
         </button>
         <button
           onClick={() => setDate((d) => offsetDate(d, 1))}
-          disabled={date >= todayStr()}
-          className="p-2 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          disabled={isToday}
+          className="p-2 rounded-lg text-[#A1A1AA] hover:text-white hover:bg-[#27272A] transition-colors disabled:opacity-30"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight />
         </button>
       </div>
 
@@ -140,9 +153,9 @@ export function DiarioClient() {
           <span className="text-[#3DD6E0] font-bold text-lg">{Math.round(totals.kcal)} kcal</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <MacroChip label="Proteína" value={totals.protein} color="#D4175A" unit="g" />
-          <MacroChip label="Hidratos" value={totals.carbs} color="#3DD6E0" unit="g" />
-          <MacroChip label="Grasa" value={totals.fat} color="#F59E0B" unit="g" />
+          <MacroChip label="Proteína" value={totals.protein} color="#D4175A" />
+          <MacroChip label="Hidratos" value={totals.carbs} color="#3DD6E0" />
+          <MacroChip label="Grasa" value={totals.fat} color="#F59E0B" />
         </div>
       </div>
 
@@ -151,15 +164,16 @@ export function DiarioClient() {
         {loading ? (
           <div className="text-center text-[#A1A1AA] py-8 text-sm">Cargando...</div>
         ) : (
-          MEALS.map((meal) => (
+          data?.meals.map((meal) => (
             <MealSection
-              key={meal}
+              key={meal.id}
               meal={meal}
-              label={MEAL_LABELS[meal]}
-              entries={data?.byMeal[meal] ?? []}
+              date={date}
               onAdd={() => setAddTarget(meal)}
               onDelete={handleDelete}
               onEdit={(entry) => setEditTarget({ entry, meal })}
+              onSettings={() => setSettingsMeal(meal)}
+              onSugerencias={() => setSugerenciasMeal(meal)}
             />
           ))
         )}
@@ -168,7 +182,7 @@ export function DiarioClient() {
       {/* Modals */}
       {addTarget && (
         <AddFoodModal
-          meal={MEAL_LABELS[addTarget]}
+          meal={addTarget.name}
           onConfirm={handleAdd}
           onClose={() => setAddTarget(null)}
         />
@@ -181,15 +195,48 @@ export function DiarioClient() {
           onClose={() => setEditTarget(null)}
         />
       )}
+
+      {settingsMeal && (
+        <MealSettingsSheet
+          meal={settingsMeal}
+          allMeals={data?.meals ?? []}
+          onClose={() => { setSettingsMeal(null); load(date); }}
+        />
+      )}
+
+      {sugerenciasMeal && (
+        <SugerenciasModal
+          meal={sugerenciasMeal}
+          date={date}
+          onAdd={handleSugerenciaAdd}
+          onClose={() => { setSugerenciasMeal(null); load(date); }}
+        />
+      )}
     </div>
   );
 }
 
-function MacroChip({ label, value, color, unit }: { label: string; value: number; color: string; unit: string }) {
+function MacroChip({ label, value, color, unit = "g" }: { label: string; value: number; color: string; unit?: string }) {
   return (
     <div className="flex flex-col items-center bg-[#09090B] rounded-lg py-2 px-1">
       <span className="font-bold text-base" style={{ color }}>{value.toFixed(1)}{unit}</span>
       <span className="text-[10px] text-[#A1A1AA] mt-0.5">{label}</span>
     </div>
+  );
+}
+
+function ChevronLeft() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
   );
 }
