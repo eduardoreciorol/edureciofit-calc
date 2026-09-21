@@ -393,7 +393,8 @@ function DailyTargetsModal({
             </svg>
           </button>
         </div>
-        <div className="px-4 py-5 flex flex-col gap-4 overflow-y-auto">
+        {/* Scrollable fields */}
+        <div className="px-4 py-4 flex flex-col gap-4 overflow-y-auto flex-1">
           <p className="text-xs text-[#A1A1AA]">
             Introduce tus macros objetivo. Las calorías se calculan solas.
           </p>
@@ -401,7 +402,6 @@ function DailyTargetsModal({
           {numInput("Hidratos", carbs, setCarbs, "#3DD6E0")}
           {numInput("Grasa", fat, setFat, "#F59E0B")}
 
-          {/* Auto-calculated kcal */}
           <div className="flex items-center gap-3 border-t border-[#27272A] pt-3">
             <span className="text-sm font-medium flex-1 text-[#A1A1AA]">Calorías totales</span>
             <span className="w-24 text-right font-bold text-lg text-[#3DD6E0]">
@@ -409,7 +409,10 @@ function DailyTargetsModal({
             </span>
             <span className="text-xs text-[#A1A1AA] w-4">kcal</span>
           </div>
+        </div>
 
+        {/* Save button — always visible at the bottom */}
+        <div className="px-4 pb-6 pt-3 flex-shrink-0 border-t border-[#27272A]">
           <button
             onClick={async () => {
               setSaving(true);
@@ -417,7 +420,7 @@ function DailyTargetsModal({
               setSaving(false);
             }}
             disabled={saving}
-            className="w-full py-3 rounded-xl font-bold text-sm text-black disabled:opacity-40 mt-1"
+            className="w-full py-3 rounded-xl font-bold text-sm text-black disabled:opacity-40"
             style={{ background: "linear-gradient(90deg, #3DD6E0, #D4175A)" }}
           >
             {saving ? "Guardando..." : "Guardar objetivos"}
