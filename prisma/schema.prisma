@@ -25,6 +25,14 @@ enum FoodSource {
   harbiz
 }
 
+enum MealSlot {
+  desayuno
+  almuerzo
+  comida
+  merienda
+  cena
+}
+
 model User {
   id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String       @unique
@@ -36,6 +44,7 @@ model User {
   invitedUsers User[]       @relation("InvitedBy")
   invitations  Invitation[] @relation("InvitedByAdmin")
   createdFoods Food[]
+  diaryLogs    DiaryLog[]
   createdAt    DateTime     @default(now()) @map("created_at")
 
   @@map("users")
@@ -73,7 +82,28 @@ model Food {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
+  diaryLogs     DiaryLog[]
+
   @@index([dominantMacro, isActive])
   @@index([name])
   @@map("foods")
+}
+
+model DiaryLog {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime @db.Date
+  meal      MealSlot
+  foodId    String   @map("food_id") @db.Uuid
+  food      Food     @relation(fields: [foodId], references: [id])
+  grams     Decimal  @db.Decimal(8, 1)
+  kcal      Decimal  @db.Decimal(8, 1)
+  protein   Decimal  @db.Decimal(8, 2)
+  carbs     Decimal  @db.Decimal(8, 2)
+  fat       Decimal  @db.Decimal(8, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, date])
+  @@map("diary_logs")
 }
